@@ -273,3 +273,13 @@ export async function refreshShop(slug: string): Promise<{ ok: boolean }> {
   revalidatePath(`/${slug}/shop`);
   return { ok };
 }
+
+export async function setNavTab(slug: string, tab: "accounting" | "courier" | "shopify", shown: boolean): Promise<{ ok: boolean }> {
+  if (!["accounting", "courier", "shopify"].includes(tab) || typeof shown !== "boolean") return { ok: false };
+  const ctx = await managers(slug);
+  if (!ctx) return { ok: false };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("set_nav_tab", { p_workspace: ctx.workspace.id, p_tab: tab, p_shown: shown });
+  revalidatePath(`/${slug}`, "layout");
+  return { ok: !error };
+}

@@ -94,5 +94,5 @@ Plan and verified API rules: [docs/plans/integrations.md](docs/plans/integration
 27. **Sage (South Africa):** request an API key from Sage (accounting.sageone.co.za developer programme, enrollment form and licence agreement) and put it in Vercel as `SAGE_API_KEY`. Each business then signs in with its own Sage login on the Apps page.
 28. **Courier Guy:** nothing for ASC to set up. Each business pastes its own Ship Logic API key on the Apps page (sandbox accounts: tcg-sandbox.shiplogic.com).
 29. **Stitch:** nothing for ASC to set up. Each business with a Stitch client pastes its client id and secret on **Getting paid**, asks Stitch to allow redirects to the site, and (optionally) adds the webhook address shown there.
-30. Apply migrations `0050`–`0055` and run `supabase/tests/0050_integrations.test.sql` (expect `0 failed`).
+30. Apply migrations `0050`–`0056` and run `supabase/tests/0050_integrations.test.sql` and `0056_nav_tabs.test.sql` (expect `0 failed`).
 

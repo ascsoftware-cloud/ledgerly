@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
 import type { WorkspaceContext } from "@/lib/workspace";
@@ -154,3 +155,154 @@ export async function documentSyncStatus(ctx: WorkspaceContext, documentId: stri
       } as const;
     });
 }
+
+export type NavTab = "accounting" | "courier" | "shopify";
+export type NavTabState = { tab: NavTab; shown: boolean; isDefault: boolean };
+
+/** Which of the Accounting, Courier and Shopify tabs this workspace shows (migration 0056). */
+export const getNavTabs = cache(async (workspaceId: string): Promise<NavTabState[]> => {
+  const supabase = await createServerClient();
+  const { data } = await supabase.rpc("nav_tabs", { p_workspace: workspaceId });
+  return z
+    .array(
+      z.object({
+        tab: z.enum(["accounting", "courier", "shopify"]),
+        shown: z.boolean(),
+        is_default: z.boolean(),
+      }),
+    )
+    .catch([])
+    .parse(data ?? [])
+    .map((r) => ({ tab: r.tab, shown: r.shown, isDefault: r.is_default }));
+});
+
+/** The Accounting page: per app, what was sent this month, what is waiting, what needs a person. */
+export async function accountingOverview(ctx: WorkspaceContext) {
+  const supabase = await createServerClient();
+  const conns = await getConnections(ctx);
+  const apps = [conns.xero, conns.sage_za].filter((c): c is IntegrationConnection => !!c);
+  if (!apps.length) return { apps: [], recent: [] as RecentSync[], failed: [] as IntegrationJob[] };
+  // The first of this month in South African time.
+  const ym = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Johannesburg",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+  const monthStart = new Date(`${ym}-01T00:00:00+02:00`);
+
+  const [links, waiting, failed] = await Promise.all([
+    supabase
+      .from("sync_links")
+      .select("connection_id, entity_type, local_id, external_number, mismatch, synced_at")
+      .eq("workspace_id", ctx.workspace.id)
+      .in(
+        "connection_id",
+        apps.map((a) => a.id),
+      )
+      .order("synced_at", { ascending: false })
+      .limit(500),
+    ctx.role === "staff"
+      ? Promise.resolve({ data: [] })
+      : supabase
+          .from("integration_jobs")
+          .select("connection_id")
+          .eq("workspace_id", ctx.workspace.id)
+          .in("status", ["pending", "running"])
+          .in("kind", ["push_document", "void_document", "push_payment"]),
+    failedJobs(ctx, 50),
+  ]);
+  const linkRows = z
+    .array(
+      z.object({
+        connection_id: z.uuid(),
+        entity_type: z.string(),
+        local_id: z.uuid(),
+        external_number: z.string().nullable(),
+        mismatch: z.boolean(),
+        synced_at: z.string(),
+      }),
+    )
+    .catch([])
+    .parse(links.data ?? []);
+  const waitingRows = z
+    .array(z.object({ connection_id: z.uuid() }))
+    .catch([])
+    .parse(waiting.data ?? []);
+
+  const docLinks = linkRows.filter((l) => l.entity_type === "document").slice(0, 15);
+  const { data: docs } = docLinks.length
+    ? await supabase
+        .from("sales_documents")
+        .select("id, kind, number, total_cents, contacts(name)")
+        .eq("workspace_id", ctx.workspace.id)
+        .in(
+          "id",
+          docLinks.map((l) => l.local_id),
+        )
+    : { data: [] };
+  const docMap = new Map(
+    z
+      .array(
+        z.object({
+          id: z.uuid(),
+          kind: z.string(),
+          number: z.string().nullable(),
+          total_cents: z.coerce.number(),
+          contacts: z.object({ name: z.string() }).nullable(),
+        }),
+      )
+      .catch([])
+      .parse(docs ?? [])
+      .map((d) => [d.id, d]),
+  );
+
+  return {
+    apps: apps.map((a) => ({
+      ...a,
+      sentThisMonth: linkRows.filter(
+        (l) =>
+          l.connection_id === a.id &&
+          l.entity_type === "document" &&
+          new Date(l.synced_at) >= monthStart,
+      ).length,
+      paymentsThisMonth: linkRows.filter(
+        (l) =>
+          l.connection_id === a.id &&
+          l.entity_type === "payment" &&
+          new Date(l.synced_at) >= monthStart,
+      ).length,
+      waiting: waitingRows.filter((w) => w.connection_id === a.id).length,
+      mismatches: linkRows.filter((l) => l.connection_id === a.id && l.mismatch).length,
+    })),
+    recent: docLinks.flatMap((l): RecentSync[] => {
+      const d = docMap.get(l.local_id);
+      if (!d) return [];
+      return [
+        {
+          documentId: d.id,
+          number: d.number ?? "",
+          kind: d.kind,
+          client: d.contacts?.name ?? "",
+          totalCents: d.total_cents,
+          app: apps.find((a) => a.id === l.connection_id)?.provider === "sage_za" ? "Sage" : "Xero",
+          externalNumber: l.external_number,
+          mismatch: l.mismatch,
+          syncedAt: l.synced_at,
+        },
+      ];
+    }),
+    failed: failed.filter((j) => apps.some((a) => a.id === j.connection_id)),
+  };
+}
+
+export type RecentSync = {
+  documentId: string;
+  number: string;
+  kind: string;
+  client: string;
+  totalCents: number;
+  app: "Xero" | "Sage";
+  externalNumber: string | null;
+  mismatch: boolean;
+  syncedAt: string;
+};

@@ -119,3 +119,11 @@ Built on `feat/integrations`. `npm run check` passes (381 unit tests, 72 of them
 - Stitch requests Pay by Bank only; card and Capitec Pay need Stitch to enable them on the client first.
 - `src/lib/security/csp.ts` has `form-action 'self'`, which also blocks the existing PayFast form POST to payfast.co.za on the public invoice page. Not changed here (Phase 3 code); needs `https://www.payfast.co.za https://sandbox.payfast.co.za` in `form-action`.
 
+## 9. Navigation tabs (added 2026-11-12)
+
+- New tabs **Accounting** (`/[ws]/accounting`), **Courier** (`/[ws]/courier`) and **Shopify** (`/[ws]/shop`), placed after the module tabs and before More. On phones the bar still holds four tabs plus More.
+- Defaults (migration `0056_nav_tabs`): Accounting and Courier show for every workspace; Shopify shows only when onboarding question 1 was "Online store" or "Service business".
+- More lists all three pages for everyone, so a hidden tab is always reachable. Owners and admins get an "In menu" switch per tab; the choice is stored per workspace in `workspace_nav_tabs` and beats the default. `nav_tabs(workspace)` returns the result to any member (security definer, because `onboarding_answers` is owner/admin only).
+- Accounting page: per app, documents and payments sent this month, jobs waiting, totals that differ, the "needs your attention" list (retry for owners and admins), and recently sent documents.
+- Courier page: every shipment with On the way / Delivered / Problems / All filters, waybill download and the latest tracking event.
+

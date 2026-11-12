@@ -639,14 +639,16 @@ const KIND = {
   track_shipment: "Parcel tracking",
 } as Record<string, string>;
 
-function Failed({
+export function FailedJobs({
   slug,
   jobs,
   names,
+  canRetry = true,
 }: {
   slug: string;
   jobs: IntegrationJob[];
   names: Record<string, string>;
+  canRetry?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -676,21 +678,23 @@ function Failed({
               </p>
               <p className="break-words text-muted-foreground">{j.last_error ?? "Failed"}</p>
             </div>
-            <Button
-              variant="outline"
-              size="touch"
-              disabled={pending}
-              onClick={() =>
-                start(async () => {
-                  const r = await retryJob(slug, j.id);
-                  if (r.ok) toast.success("Trying again.");
-                  else toast.error(r.message ?? "Couldn't retry.");
-                  router.refresh();
-                })
-              }
-            >
-              <RotateCcw className="size-4" aria-hidden /> Try again
-            </Button>
+            {canRetry && (
+              <Button
+                variant="outline"
+                size="touch"
+                disabled={pending}
+                onClick={() =>
+                  start(async () => {
+                    const r = await retryJob(slug, j.id);
+                    if (r.ok) toast.success("Trying again.");
+                    else toast.error(r.message ?? "Couldn't retry.");
+                    router.refresh();
+                  })
+                }
+              >
+                <RotateCcw className="size-4" aria-hidden /> Try again
+              </Button>
+            )}
           </li>
         ))}
       </ul>
@@ -723,7 +727,7 @@ export function IntegrationsSettings({
   );
   return (
     <div className="space-y-6">
-      <Failed slug={slug} jobs={failed} names={names} />
+      <FailedJobs slug={slug} jobs={failed} names={names} />
       <Xero slug={slug} conn={connections.xero} options={options.xero} available={available.xero} />
       <Sage
         slug={slug}
