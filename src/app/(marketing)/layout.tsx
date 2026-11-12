@@ -12,6 +12,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <nav aria-label="Main" className="flex items-center gap-1">
             <Link
               href="/login"
+              prefetch={false}
               className={buttonVariants({ variant: "ghost", size: "touch", className: "px-3" })}
             >
               Sign in
@@ -37,6 +38,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <Link
                 key={href}
                 href={href!}
+                prefetch={false}
                 className="flex h-11 items-center px-2 underline-offset-4 hover:text-foreground hover:underline"
               >
                 {label}
