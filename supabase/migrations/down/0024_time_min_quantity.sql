@@ -1,0 +1,1 @@
+-- Re-run public.invoice_time_entries from supabase/migrations/0023_time.sql.

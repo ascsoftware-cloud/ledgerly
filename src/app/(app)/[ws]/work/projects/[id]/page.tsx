@@ -7,6 +7,8 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { ArchiveProject, ProjectForm } from "@/features/work/components/project-form";
 import { QuickAddTask, TaskRow } from "@/features/work/components/task-bits";
 import { getProject, listClientsForPicker, listTasks } from "@/features/work/queries";
+import { LogTime, Timer, TimeList } from "@/features/time/components/time-panel";
+import { listProjectTime, runningTimer } from "@/features/time/queries";
 import { sortForList } from "@/features/work/views";
 import { todaySAST } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -28,7 +30,13 @@ async function Project({ params }: { params: PageProps<"/[ws]/work/projects/[id]
   const ctx = await requireWorkspace(ws);
   const p = await getProject(ctx, id);
   if (!p) notFound();
-  const [tasks, clients] = await Promise.all([listTasks(ctx, { projectId: p.id }), listClientsForPicker(ctx)]);
+  const [tasks, clients, time, running] = await Promise.all([
+    listTasks(ctx, { projectId: p.id }),
+    listClientsForPicker(ctx),
+    listProjectTime(ctx, p.id),
+    runningTimer(ctx),
+  ]);
+  const unbilled = time.filter((e) => e.billable && !e.invoice_id && e.ended_at).map((e) => e.id).join(",");
   const canWrite = ctx.role !== "accountant";
   const canArchive = ctx.role === "owner" || ctx.role === "admin";
   const today = todaySAST();
@@ -62,6 +70,38 @@ async function Project({ params }: { params: PageProps<"/[ws]/work/projects/[id]
               <TaskRow key={t.id} slug={ws} canWrite={canWrite} today={today} task={{ ...t, projectName: null }} />
             ))}
           </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="project-time" className="space-y-3">
+        <h2 id="project-time" className="font-semibold">
+          Time
+        </h2>
+        {canWrite && (
+          <>
+            <Timer slug={ws} projectId={p.id} running={running ? { startedAt: running.started_at, here: running.project_id === p.id } : null} />
+            <LogTime slug={ws} projectId={p.id} />
+          </>
+        )}
+        {time.length > 0 && (
+          <TimeList
+            key={unbilled}
+            slug={ws}
+            projectId={p.id}
+            rateCents={p.hourly_rate_cents}
+            canBill={canWrite}
+            entries={time.map((e) => ({
+              id: e.id,
+              mine: e.user_id === ctx.user.id,
+              started_at: e.started_at,
+              ended_at: e.ended_at,
+              minutes: e.minutes,
+              description: e.description ?? e.tasks?.title ?? null,
+              billable: e.billable,
+              invoiced: !!e.invoice_id,
+              invoiceNumber: e.sales_documents?.number ?? null,
+            }))}
+          />
         )}
       </section>
 
