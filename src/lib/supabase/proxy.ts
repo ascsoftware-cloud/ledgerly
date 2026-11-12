@@ -6,11 +6,13 @@ import { publicEnv } from "./env";
  * Refreshes the signed-in session on each request so server-rendered pages never
  * see an expired token. Follows Supabase's Next.js guide for this Next.js version.
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+): Promise<{ response: NextResponse; userId: string | null; configured: boolean }> {
   let response = NextResponse.next({ request });
 
   const env = publicEnv();
-  if (!env) return response; // Supabase not configured: nothing to refresh.
+  if (!env) return { response, userId: null, configured: false }; // Supabase not configured.
 
   const supabase = createServerClient(env.url, env.publishableKey, {
     cookies: {
@@ -30,7 +32,7 @@ export async function updateSession(request: NextRequest) {
 
   // Do not add code between creating the client and getClaims(): doing so can
   // cause users to be signed out at random.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
-  return response;
+  return { response, userId: data?.claims?.sub ?? null, configured: true };
 }

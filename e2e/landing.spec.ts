@@ -49,7 +49,7 @@ test("landing page fits a phone without sideways scrolling", async ({ page }) =>
 });
 
 test("an unknown address shows a helpful 404 with a way home", async ({ page }) => {
-  const response = await page.goto("/nope-not-here");
+  const response = await page.goto("/nope_not_here");
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "We can't find that page" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to home" })).toHaveAttribute("href", "/");

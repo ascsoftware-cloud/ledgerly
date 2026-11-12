@@ -8,6 +8,8 @@ import nextTs from "eslint-config-next/typescript";
  */
 const SERVICE_ROLE_ALLOWED = [
   "src/lib/supabase/admin.ts",
+  // Calls public.hit_rate_limit only (sign-in and public endpoint throttling).
+  "src/lib/rate-limit.ts",
   "src/app/api/webhooks/**",
   "src/features/account/delete-account.ts",
   "supabase/functions/**",

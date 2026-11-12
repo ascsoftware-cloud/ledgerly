@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { NAV_ICONS } from "./icons";
 import { isActive, type NavItem } from "./nav";
 
 /** Desktop navigation. Collapses to icons; links keep their names for screen readers. */
 export function Sidebar({
   items,
+  title,
+  titleHref,
   collapsed,
   onToggle,
 }: {
   items: NavItem[];
+  title: string;
+  titleHref?: string;
   collapsed: boolean;
   onToggle: () => void;
 }) {
@@ -24,9 +29,18 @@ export function Sidebar({
       className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-2 border-r bg-card p-3 transition-[width] duration-(--dur) ease-(--ease) data-[collapsed=true]:w-17 md:flex"
     >
       <div className="flex h-11 items-center justify-between gap-2 px-1">
-        {!collapsed && (
-          <span className="truncate text-lg font-semibold tracking-tight">Ledgerly</span>
-        )}
+        {!collapsed &&
+          (titleHref ? (
+            <Link
+              href={titleHref}
+              title="Switch workspace"
+              className="flex h-11 min-w-0 items-center truncate rounded-xl px-2 text-base font-semibold tracking-tight hover:bg-muted"
+            >
+              <span className="truncate">{title}</span>
+            </Link>
+          ) : (
+            <span className="truncate text-lg font-semibold tracking-tight">{title}</span>
+          ))}
         <button
           type="button"
           onClick={onToggle}
@@ -40,6 +54,7 @@ export function Sidebar({
       <ul className="flex flex-col gap-1">
         {items.map((item) => {
           const active = isActive(pathname, item, items);
+          const Icon = NAV_ICONS[item.icon];
           return (
             <li key={item.key}>
               <Link
@@ -49,7 +64,7 @@ export function Sidebar({
                 title={collapsed ? item.label : undefined}
                 className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-muted hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground"
               >
-                <item.icon className="size-5 shrink-0" aria-hidden />
+                <Icon className="size-5 shrink-0" aria-hidden />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             </li>

@@ -29,7 +29,19 @@ function readCollapsed(): boolean {
 let memoryFallback: boolean | null = null;
 
 /** Frame for every signed-in screen: sidebar on desktop, bottom tabs on phones. */
-export function AppShell({ nav, children }: { nav: NavItem[]; children: ReactNode }) {
+export function AppShell({
+  nav,
+  title = "Ledgerly",
+  titleHref,
+  children,
+}: {
+  nav: NavItem[];
+  /** Shown at the top of the sidebar: the workspace name. */
+  title?: string;
+  /** Where the title links to (the workspace switcher). */
+  titleHref?: string;
+  children: ReactNode;
+}) {
   const collapsed = useSyncExternalStore(
     subscribe,
     () => memoryFallback ?? readCollapsed(),
@@ -54,7 +66,7 @@ export function AppShell({ nav, children }: { nav: NavItem[]; children: ReactNod
       >
         Skip to content
       </a>
-      <Sidebar items={nav} collapsed={collapsed} onToggle={toggle} />
+      <Sidebar items={nav} title={title} titleHref={titleHref} collapsed={collapsed} onToggle={toggle} />
       <main id="main" className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-10">
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>

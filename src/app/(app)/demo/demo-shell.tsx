@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, FileText, Home, Menu, Users, Wallet } from "lucide-react";
+import { FileText } from "lucide-react";
 import { AppShell } from "@/components/shell/app-shell";
 import type { NavItem } from "@/components/shell/nav";
 import { EmptyState } from "@/components/states/empty-state";
@@ -8,11 +8,11 @@ import { ErrorState } from "@/components/states/error-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 
 const NAV: NavItem[] = [
-  { key: "home", label: "Home", href: "/demo", icon: Home },
-  { key: "money", label: "Money", href: "/demo/money", icon: Wallet },
-  { key: "clients", label: "Clients", href: "/demo/clients", icon: Users },
-  { key: "work", label: "Work", href: "/demo/work", icon: Briefcase },
-  { key: "more", label: "More", href: "/demo/more", icon: Menu },
+  { key: "home", label: "Home", href: "/demo", icon: "home" },
+  { key: "money", label: "Money", href: "/demo/money", icon: "wallet" },
+  { key: "clients", label: "Clients", href: "/demo/clients", icon: "users" },
+  { key: "work", label: "Work", href: "/demo/work", icon: "briefcase" },
+  { key: "more", label: "More", href: "/demo/more", icon: "menu" },
 ];
 
 export function DemoShell() {

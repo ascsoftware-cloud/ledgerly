@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/states/page-skeleton";
 import { OnboardingFlow } from "@/features/onboarding/components/onboarding-flow";
 
 export const metadata: Metadata = {
@@ -7,5 +9,15 @@ export const metadata: Metadata = {
 };
 
 export default function StartPage() {
-  return <OnboardingFlow />;
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto w-full max-w-lg px-4 py-10">
+          <PageSkeleton variant="list" />
+        </main>
+      }
+    >
+      <OnboardingFlow />
+    </Suspense>
+  );
 }

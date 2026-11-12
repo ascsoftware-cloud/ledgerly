@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Vibrate, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,9 @@ export function OnboardingFlow() {
   const [sound, setSound] = useStoredFlag(SOUND_KEY, false);
   const [haptics, setHaptics] = useStoredFlag(HAPTICS_KEY, true);
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
+  // Signed-in users finishing set-up later skip the sign-in screen and go straight to building.
+  const resumeAfter = useSearchParams().get("then") === "welcome";
   const [direction, setDirection] = useState<1 | -1>(1);
 
   if (!draft) {
@@ -91,6 +95,7 @@ export function OnboardingFlow() {
           : d.answers;
       return { ...d, answers, step: Math.min(Math.max(d.step + delta, 0), QUESTIONS.length) };
     });
+    if (delta === 1 && resumeAfter && step === QUESTIONS.length - 1) router.push("/welcome");
   }
 
   const title = question ? question.title : "Save your workspace";

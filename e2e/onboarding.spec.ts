@@ -39,7 +39,7 @@ test("a new user completes all eight questions by tapping only", async ({ page }
   await next(page).click();
 
   await expect(heading(page, "Save your workspace")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Continue with email" })).toBeVisible();
 
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("ledgerly-onboarding")!));

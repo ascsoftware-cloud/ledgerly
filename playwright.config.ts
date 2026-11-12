@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Tests read the same local settings as the app (test-only admin helpers need them).
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // No .env.local: tests that need Supabase admin access skip themselves.
+}
+
 const PORT = 3100;
 
 export default defineConfig({
