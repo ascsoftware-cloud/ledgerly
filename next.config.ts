@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // PDF rendering uses Node APIs; keep it out of the bundler.
+  serverExternalPackages: ["@react-pdf/renderer"],
   turbopack: {
     rules: {
       "*.css": {

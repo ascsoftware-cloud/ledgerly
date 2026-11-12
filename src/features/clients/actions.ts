@@ -9,7 +9,13 @@ import { contactInputSchema, importRowSchema, MAX_IMPORT_ROWS, type ContactInput
 
 export type FormState =
   | { status: "idle" }
-  | { status: "error"; message: string; fieldErrors?: Partial<Record<keyof ContactInput, string>> };
+  | {
+      status: "error";
+      message: string;
+      fieldErrors?: Partial<Record<keyof ContactInput, string>>;
+      /** What was typed, so the form can show it again (React clears fields after a submit). */
+      values?: Record<keyof ContactInput, string>;
+    };
 
 const CAN_WRITE = ["owner", "admin", "staff"] as const;
 
@@ -26,13 +32,13 @@ function formValues(form: FormData) {
   return { name: get("name"), email: get("email"), phone: get("phone"), company: get("company"), address: get("address") };
 }
 
-function fieldErrors(error: z.ZodError): FormState {
+function fieldErrors(error: z.ZodError, values: Record<keyof ContactInput, string>): FormState {
   const errs: Partial<Record<keyof ContactInput, string>> = {};
   for (const issue of error.issues) {
     const key = issue.path[0] as keyof ContactInput;
     errs[key] ??= issue.message;
   }
-  return { status: "error", message: "Check the highlighted fields.", fieldErrors: errs };
+  return { status: "error", message: "Check the highlighted fields.", fieldErrors: errs, values };
 }
 
 /** Finds a company by name (any case) in this workspace, creating it if new. */
@@ -61,8 +67,9 @@ async function companyId(
 }
 
 export async function saveContact(slug: string, contactId: string | null, _prev: FormState, form: FormData): Promise<FormState> {
-  const parsed = contactInputSchema.safeParse(formValues(form));
-  if (!parsed.success) return fieldErrors(parsed.error);
+  const typed = formValues(form);
+  const parsed = contactInputSchema.safeParse(typed);
+  if (!parsed.success) return fieldErrors(parsed.error, typed);
 
   let ctx;
   try {

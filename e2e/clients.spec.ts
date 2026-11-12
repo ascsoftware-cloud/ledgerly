@@ -59,6 +59,9 @@ test("the form explains mistakes next to the field", async ({ page }) => {
   await page.getByRole("button", { name: "Add client" }).click();
   await expect(page.getByText("That phone number doesn't look right.")).toBeVisible();
   await expect(page.getByLabel("Phone")).toHaveAttribute("aria-invalid", "true");
+  // Nothing typed is lost.
+  await expect(page.getByLabel("Name")).toHaveValue("Sipho");
+  await expect(page.getByLabel("Phone")).toHaveValue("12");
 });
 
 test("CSV import checks every row first, then adds them all", async ({ page }) => {

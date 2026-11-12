@@ -43,3 +43,16 @@ export async function cleanUp(userIds: string[]) {
     await db.auth.admin.deleteUser(id);
   }
 }
+
+/** The public link path (/p/<token>) of a sent document, looked up by its number. */
+export async function publicPath(userId: string, number: string): Promise<string> {
+  const db = admin();
+  const { data: ws } = await db.from("workspaces").select("id").eq("created_by", userId).single();
+  const { data } = await db
+    .from("sales_documents")
+    .select("public_token")
+    .eq("workspace_id", ws!.id)
+    .eq("number", number)
+    .single();
+  return `/p/${data!.public_token}`;
+}

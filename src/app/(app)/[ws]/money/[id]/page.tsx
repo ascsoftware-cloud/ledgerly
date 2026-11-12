@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { DocumentActions } from "@/features/sales/components/document-actions";
 import { DocumentView } from "@/features/sales/components/document-view";
@@ -47,9 +48,14 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
           </h1>
           <StatusBadge status={shown} />
         </div>
-        <Link href={`/${ws}/clients/${d.contact_id}`} className="text-sm text-muted-foreground hover:text-primary">
-          {d.contacts.name}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/${ws}/clients/${d.contact_id}`} className="text-sm text-muted-foreground hover:text-primary">
+            {d.contacts.name}
+          </Link>
+          <a href={`/api/documents/${d.id}/pdf?ws=${ws}`} className={buttonVariants({ variant: "ghost", size: "touch" })}>
+            <Download className="size-5" aria-hidden /> PDF
+          </a>
+        </div>
       </header>
       <DocumentActions
         slug={ws}

@@ -30,6 +30,7 @@ export function ContactForm({
     status: "idle",
   });
   const errors = state.status === "error" ? (state.fieldErrors ?? {}) : {};
+  const shown = state.status === "error" && state.values ? state.values : initial;
 
   return (
     <form action={action} className="space-y-5" noValidate>
@@ -47,12 +48,13 @@ export function ContactForm({
               {f.hint && <span className="text-xs font-normal text-muted-foreground">{f.hint}</span>}
             </label>
             <Input
+              key={`${f.name}-${state.status === "error" ? state.message + (state.values?.[f.name] ?? "") : "idle"}`}
               id={f.name}
               name={f.name}
               type={f.type ?? "text"}
               inputMode={f.inputMode}
               autoComplete={f.autoComplete}
-              defaultValue={initial?.[f.name] ?? ""}
+              defaultValue={shown?.[f.name] ?? ""}
               required={f.name === "name"}
               autoFocus={f.name === "name" && !contactId}
               aria-invalid={!!err}
