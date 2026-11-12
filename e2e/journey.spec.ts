@@ -30,7 +30,7 @@ async function answerEverything(page: Page) {
   await go();
   await page.getByRole("radio", { name: "Sky" }).click();
   await go();
-  await page.getByRole("radio", { name: "5 minutes" }).click();
+  await page.getByRole("radio", { name: "5 minutes", exact: true }).click();
   await go();
 }
 

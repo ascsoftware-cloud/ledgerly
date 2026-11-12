@@ -46,3 +46,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 !.env.example
+
+# Local notes that may hold credentials: never commit
+GOOGLE.txt
+*.secret.txt

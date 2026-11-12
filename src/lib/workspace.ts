@@ -1,5 +1,6 @@
 import "server-only";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
@@ -48,6 +49,8 @@ function firstNameFrom(claims: Record<string, unknown>): string | null {
  * Cached per request, so layout and page share one lookup.
  */
 export const requireWorkspace = cache(async (slug: string): Promise<WorkspaceContext> => {
+  // Workspace pages are per-request (session, clock): never part of a prerendered shell.
+  await connection();
   if (!SLUG.test(slug) || slug.length < 3 || slug.length > 40) notFound();
 
   const supabase = await createServerClient();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useReducedMotion } from "framer-motion";
@@ -34,41 +34,45 @@ export function BuildingScreen() {
   const reduceMotion = useReducedMotion();
   const [ticked, setTicked] = useState(0);
   const [failed, setFailed] = useState(false);
-  const started = useRef(false);
+  const [attempt, setAttempt] = useState(0);
 
-  const run = useCallback(async () => {
-    setFailed(false);
+  // Runs every time this screen becomes visible. Next.js keeps visited pages alive and
+  // restores them, so a run-once guard would show a stale "All set" and do nothing.
+  useEffect(() => {
+    let cancelled = false;
     const storage = browserStorage();
     const answers = storage ? loadAnswers(storage) : null;
-
-    const pace = reduceMotion ? 0 : 450;
     let shown = 0;
-    const timer = setInterval(() => {
-      shown = Math.min(shown + 1, STEPS.length - 1);
-      setTicked(shown);
-    }, pace || 1);
+    const timer = setInterval(
+      () => {
+        shown = Math.min(shown + 1, STEPS.length - 1);
+        setTicked(shown);
+      },
+      reduceMotion ? 1 : 450,
+    );
+    let leave: ReturnType<typeof setTimeout> | undefined;
 
-    const res = await provisionWorkspace(answers);
-    clearInterval(timer);
-
-    if (!res.ok) {
-      if (res.reason === "signed_out") {
-        router.replace("/login?next=%2Fwelcome");
+    provisionWorkspace(answers).then((res) => {
+      clearInterval(timer);
+      if (cancelled) return;
+      if (!res.ok) {
+        if (res.reason === "signed_out") router.replace("/login?next=%2Fwelcome");
+        else setFailed(true);
         return;
       }
-      setFailed(true);
-      return;
-    }
-    setTicked(STEPS.length);
-    if (storage) clearDraft(storage);
-    setTimeout(() => router.replace(`/${res.slug}`), reduceMotion ? 0 : 500);
-  }, [reduceMotion, router]);
+      setTicked(STEPS.length);
+      if (storage) clearDraft(storage);
+      leave = setTimeout(() => router.replace(`/${res.slug}`), reduceMotion ? 0 : 500);
+    });
 
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    void run();
-  }, [run]);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      clearTimeout(leave);
+      setTicked(0);
+      setFailed(false);
+    };
+  }, [attempt, reduceMotion, router]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 px-4">
@@ -76,7 +80,7 @@ export function BuildingScreen() {
         <ErrorState
           title="We couldn't finish setting up"
           body="Nothing was lost. Check your connection and try again."
-          onRetry={() => void run()}
+          onRetry={() => setAttempt((n) => n + 1)}
         />
       ) : (
         <>

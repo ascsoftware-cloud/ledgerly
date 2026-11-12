@@ -30,7 +30,7 @@ export async function signIn(page: Page, email: string, next = "/welcome", fullN
   });
   if (error || !data.properties?.hashed_token) throw new Error(`generateLink failed: ${error?.message}`);
   await page.goto(
-    `/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink&next=${encodeURIComponent(next)}`,
+    `/auth/confirm?token_hash=${data.properties.hashed_token}&type=email&next=${encodeURIComponent(next)}`,
   );
   return data.user.id;
 }
