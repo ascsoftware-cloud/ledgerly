@@ -44,6 +44,24 @@ export const payfastSchema = z.object({
   mode: z.enum(["test", "live"]),
 });
 
+export const stitchSchema = z.object({
+  clientId: z.string().trim().regex(/^[A-Za-z0-9._-]{8,100}$/, "Paste the client ID Stitch gave you."),
+  clientSecret: z
+    .string()
+    .trim()
+    .min(16, "Paste the client secret Stitch gave you.")
+    .max(500)
+    .regex(/^\S+$/, "The client secret has no spaces."),
+  webhookSecret: z
+    .string()
+    .trim()
+    .max(220)
+    .refine((v) => v === "" || /^whsec_[A-Za-z0-9+/=]{16,200}$/.test(v), "The webhook signing secret starts with whsec_.")
+    .optional()
+    .default(""),
+  mode: z.enum(["test", "live"]),
+});
+
 export const manualPaymentSchema = z.object({
   amount: z
     .string()

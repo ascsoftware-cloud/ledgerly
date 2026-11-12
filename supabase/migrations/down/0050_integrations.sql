@@ -1,0 +1,26 @@
+-- Reverses 0050_integrations. Deletes every app connection and its credentials: never run against production.
+drop trigger if exists purge_integration_secrets on public.integration_connections;
+drop function if exists app.purge_integration_secrets();
+drop function if exists public.record_integration_event(text, text, uuid, text, text);
+drop function if exists public.save_sync_link(uuid, text, uuid, text, text, bigint, bigint);
+drop function if exists public.release_stuck_integration_jobs();
+drop function if exists public.finish_integration_job(uuid, boolean, text, integer);
+drop function if exists public.claim_integration_jobs(integer);
+drop function if exists public.enqueue_integration_job(uuid, text, uuid, jsonb, text, integer);
+drop function if exists public.mark_integration(uuid, text, text, boolean);
+drop function if exists public.disable_integration(uuid, text);
+drop function if exists public.store_integration_tokens(uuid, text, text, integer);
+drop function if exists public.claim_token_refresh(uuid);
+drop function if exists public.integration_secrets(uuid);
+drop function if exists public.retry_integration_job(uuid);
+drop function if exists public.disconnect_integration(uuid);
+drop function if exists public.update_integration_settings(uuid, jsonb);
+drop function if exists public.connect_shopify(uuid, uuid, text, text, jsonb, text, text, integer);
+drop function if exists public.connect_integration(uuid, text, text, text, text, jsonb, text, text, integer);
+drop function if exists app.connect_integration_core(uuid, uuid, text, text, text, text, jsonb, text, text, integer);
+drop function if exists app.drop_integration_secrets(public.integration_connections);
+drop table if exists public.integration_events;
+drop table if exists public.sync_links;
+drop table if exists public.integration_jobs;
+drop table if exists public.integration_connections;
+delete from vault.secrets where name like 'int:%';

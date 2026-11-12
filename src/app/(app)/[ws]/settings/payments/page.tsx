@@ -7,6 +7,7 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { PaymentSettings } from "@/features/payments/components/payment-settings";
 import { RemindersSwitch } from "@/features/payments/components/reminders-switch";
 import { getPaymentSettings } from "@/features/payments/queries";
+import { siteUrl } from "@/lib/site-url";
 import { requireWorkspace } from "@/lib/workspace";
 
 export const metadata: Metadata = { title: "Getting paid", robots: { index: false } };
@@ -34,7 +35,7 @@ async function Settings({ params }: { params: PageProps<"/[ws]/settings/payments
         <p className="text-muted-foreground">Choose how clients can pay your invoices. Set up any or all.</p>
       </div>
       <RemindersSwitch slug={ws} initial={s.autoReminders} />
-      <PaymentSettings slug={ws} yoco={s.yoco} payfast={s.payfast} bank={s.bank} />
+      <PaymentSettings slug={ws} yoco={s.yoco} payfast={s.payfast} stitch={s.stitch} bank={s.bank} siteUrl={siteUrl()} />
     </div>
   );
 }

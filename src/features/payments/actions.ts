@@ -8,7 +8,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { requireWorkspace } from "@/lib/workspace";
 import { removeYocoWebhook, retireReplacedConnection } from "@/server/payments/connections";
 import { sendErrorMessage } from "@/features/sales/status";
-import { bankDetailsSchema, manualPaymentSchema, MAX_PROOF_BYTES, payfastSchema, PROOF_TYPES, yocoSchema } from "./schema";
+import { STITCH_TOKEN_URL, tokenBody as stitchTokenBody } from "@/server/payments/stitch";
+import { bankDetailsSchema, manualPaymentSchema, MAX_PROOF_BYTES, payfastSchema, PROOF_TYPES, stitchSchema, yocoSchema } from "./schema";
 
 export type FormResult = { status: "idle" } | { status: "saved"; message: string; first?: boolean } | { status: "error"; message: string };
 
@@ -104,6 +105,40 @@ export async function connectPayfast(slug: string, _prev: FormResult, form: Form
   if (error) return { status: "error", message: sendErrorMessage(error) };
   revalidatePath(`/${slug}/settings/payments`);
   return { status: "saved", message: `PayFast connected (${parsed.data.mode} mode).` };
+}
+
+export async function connectStitch(slug: string, _prev: FormResult, form: FormData): Promise<FormResult> {
+  const parsed = stitchSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { status: "error", message: first(parsed) };
+  const ctx = await managers(slug);
+  if (!ctx) return { status: "error", message: "Only owners and admins can connect Stitch." };
+  // Check the credentials with Stitch before saving them.
+  const check = await fetch(STITCH_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: stitchTokenBody(parsed.data.clientId, parsed.data.clientSecret),
+    signal: AbortSignal.timeout(15_000),
+  }).catch(() => null);
+  if (!check?.ok) {
+    return {
+      status: "error",
+      message:
+        check && check.status < 500
+          ? "Stitch didn't accept that client ID and secret, or Pay by Bank isn't switched on for your client yet."
+          : "Couldn't reach Stitch. Nothing was saved. Try again in a moment.",
+    };
+  }
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("connect_stitch", {
+    p_workspace: ctx.workspace.id,
+    p_mode: parsed.data.mode,
+    p_client_id: parsed.data.clientId,
+    p_client_secret: parsed.data.clientSecret,
+    p_webhook_secret: parsed.data.webhookSecret || null,
+  });
+  if (error) return { status: "error", message: sendErrorMessage(error) };
+  revalidatePath(`/${slug}/settings/payments`);
+  return { status: "saved", message: `Stitch connected (${parsed.data.mode} mode). Clients can now pay from their bank.` };
 }
 
 export async function disconnectProvider(slug: string, connectionId: string): Promise<{ ok: boolean }> {

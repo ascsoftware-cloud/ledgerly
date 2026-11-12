@@ -2,11 +2,11 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, CreditCard, Landmark, Zap } from "lucide-react";
+import { Building2, CheckCircle2, CreditCard, Landmark, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { connectPayfast, connectYoco, disconnectProvider, saveBankDetails, type FormResult } from "../actions";
+import { connectPayfast, connectStitch, connectYoco, disconnectProvider, saveBankDetails, type FormResult } from "../actions";
 import { SA_BANKS, type BankDetails } from "../schema";
 
 type Connection = { id: string; mode: "test" | "live"; merchant_id: string | null } | null;
@@ -71,12 +71,16 @@ export function PaymentSettings({
   slug,
   yoco,
   payfast,
+  stitch,
   bank,
+  siteUrl,
 }: {
   slug: string;
   yoco: Connection;
   payfast: Connection;
+  stitch: (NonNullable<Connection> & { client_id?: string | null }) | null;
   bank: Partial<BankDetails> | null;
+  siteUrl: string;
 }) {
   const [bankState, bankAction, bankPending] = useActionState<FormResult, FormData>(saveBankDetails.bind(null, slug), { status: "idle" });
   const [yocoState, yocoAction, yocoPending] = useActionState<FormResult, FormData>(connectYoco.bind(null, slug), { status: "idle" });
@@ -92,6 +96,8 @@ export function PaymentSettings({
   });
   const [yocoKey, setYocoKey] = useState("");
   const [pf, setPf] = useState({ merchantId: "", merchantKey: "", passphrase: "", mode: "test" as "test" | "live" });
+  const [stState, stAction, stPending] = useActionState<FormResult, FormData>(connectStitch.bind(null, slug), { status: "idle" });
+  const [st, setSt] = useState({ clientId: "", clientSecret: "", webhookSecret: "", mode: "test" as "test" | "live" });
 
   return (
     <div className="space-y-6">
@@ -194,6 +200,49 @@ export function PaymentSettings({
                 {pfPending ? "Connecting…" : "Connect PayFast"}
               </Button>
               <Result state={pfState} />
+            </div>
+          </form>
+        )}
+      </Card>
+      <Card icon={Building2} title="Stitch" body="Pay by bank (instant EFT) into your own account, through your own Stitch client.">
+        {stitch ? (
+          <div className="space-y-3">
+            <Connected slug={slug} conn={stitch} label="Stitch" />
+            <p className="text-sm text-muted-foreground">
+              Webhook address for Stitch (event type <code>payment</code>):{" "}
+              <code className="break-all">{`${siteUrl}/api/webhooks/stitch/${stitch.id}`}</code>. Without it, payments are still
+              confirmed when your client comes back from their bank.
+            </p>
+          </div>
+        ) : (
+          <form action={stAction} noValidate className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 text-sm font-medium">
+              Client ID
+              <Input name="clientId" autoComplete="off" spellCheck={false} value={st.clientId} onChange={(e) => setSt({ ...st, clientId: e.target.value })} className="h-12 font-mono text-base" />
+            </label>
+            <label className="space-y-1 text-sm font-medium">
+              Client secret
+              <Input name="clientSecret" type="password" autoComplete="off" value={st.clientSecret} onChange={(e) => setSt({ ...st, clientSecret: e.target.value })} className="h-12 text-base" />
+            </label>
+            <label className="space-y-1 text-sm font-medium">
+              Webhook signing secret <span className="font-normal text-muted-foreground">(optional, whsec_…)</span>
+              <Input name="webhookSecret" type="password" autoComplete="off" value={st.webhookSecret} onChange={(e) => setSt({ ...st, webhookSecret: e.target.value })} className="h-12 font-mono text-base" />
+            </label>
+            <label className="space-y-1 text-sm font-medium">
+              Mode
+              <select name="mode" value={st.mode} onChange={(e) => setSt({ ...st, mode: e.target.value as "test" | "live" })} className={field}>
+                <option value="test">Test client</option>
+                <option value="live">Live client</option>
+              </select>
+            </label>
+            <div className="sm:col-span-2 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Stitch issues the client ID and secret once your business is approved. Ask Stitch to allow redirects to {siteUrl}.
+              </p>
+              <Button type="submit" size="touch" disabled={stPending || !st.clientId || !st.clientSecret}>
+                {stPending ? "Checking with Stitch…" : "Connect Stitch"}
+              </Button>
+              <Result state={stState} />
             </div>
           </form>
         )}

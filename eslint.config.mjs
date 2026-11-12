@@ -18,6 +18,9 @@ const SERVICE_ROLE_ALLOWED = [
   "src/server/payments/checkout.ts",
   "src/server/payments/connections.ts",
   "src/server/bookings/create.ts",
+  // Outside apps (Courier Guy, Shopify, Xero, Sage) read their credentials from Vault and run
+  // queued jobs. Functions there take a workspace or connection id the caller already authorised.
+  "src/server/integrations/**",
   "src/features/account/delete-account.ts",
   "supabase/functions/**",
 ];

@@ -32,6 +32,9 @@ Copy `.env.example` to `.env.local` and fill it in. `.env.local` is never commit
 | `RESEND_API_KEY` | Resend > API Keys (step 13 below). Sends invoices, quotes and reminders |
 | `EMAIL_FROM` | A sender on your verified Resend domain, e.g. `Ledgerly <invoices@mail.yourdomain.co.za>` |
 | `JOBS_SECRET` | Must equal the Vault secret `jobs_secret` (see section D). Lets the database's scheduled jobs call the app |
+| `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET` | ASC's Xero app (section F). Optional |
+| `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` | ASC's Shopify app (section F). Optional |
+| `SAGE_API_KEY` | Issued by Sage to ASC (section F). Optional |
 
 ## Owner set-up checklist (sign-in)
 
@@ -83,3 +86,13 @@ Ledgerly never holds client money: each business pastes its own keys on **More >
 22. **PayFast:** in the PayFast dashboard's settings, find the developer (integration) settings. Paste the Merchant ID, Merchant key and the passphrase you set there. Use a sandbox account from [sandbox.payfast.co.za](https://sandbox.payfast.co.za) to try it out first.
 23. **EFT:** add your bank details on the same page. They appear on every invoice, and you record EFT payments by hand.
 24. Optional: switch on **Payment reminders** on the same page. Clients with an email address get a reminder 3 days before an invoice is due, on the day, and 3 days after.
+
+### F. Apps: Xero, Sage, Courier Guy, Shopify (More > Apps) and Stitch (More > Getting paid)
+Plan and verified API rules: [docs/plans/integrations.md](docs/plans/integrations.md). Each app is optional.
+25. **Xero:** at developer.xero.com create a *Web app* owned by ASC. Redirect URI: `<site>/api/oauth/xero/callback`. Put its client id and secret in Vercel as `XERO_CLIENT_ID` / `XERO_CLIENT_SECRET`. The free Starter tier allows 5 connected organisations; every business that connects Xero counts as one.
+26. **Shopify:** in the Shopify Dev Dashboard create an app owned by ASC with redirect URL `<site>/api/oauth/shopify/callback` and scopes `read_products, read_inventory, read_locations, read_orders`. Set the compliance webhooks (customer data request, customer redact, shop redact) to `<site>/api/webhooks/shopify`. Put the client id and secret in Vercel as `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET`. To connect stores you do not own, the app needs public distribution (Shopify review) or custom distribution per store.
+27. **Sage (South Africa):** request an API key from Sage (accounting.sageone.co.za developer programme, enrollment form and licence agreement) and put it in Vercel as `SAGE_API_KEY`. Each business then signs in with its own Sage login on the Apps page.
+28. **Courier Guy:** nothing for ASC to set up. Each business pastes its own Ship Logic API key on the Apps page (sandbox accounts: tcg-sandbox.shiplogic.com).
+29. **Stitch:** nothing for ASC to set up. Each business with a Stitch client pastes its client id and secret on **Getting paid**, asks Stitch to allow redirects to the site, and (optionally) adds the webhook address shown there.
+30. Apply migrations `0050`–`0056` and run `supabase/tests/0050_integrations.test.sql` and `0056_nav_tabs.test.sql` (expect `0 failed`).
+

@@ -3,6 +3,7 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AppShell } from "@/components/shell/app-shell";
 import { WorkspaceTheme } from "@/features/dashboard/components/workspace-theme";
 import { getEnabledNav } from "@/features/dashboard/nav";
+import { getNavTabs } from "@/features/integrations/queries";
 import { requireWorkspace } from "@/lib/workspace";
 
 export default function WorkspaceLayout({ children, params }: LayoutProps<"/[ws]">) {
@@ -29,9 +30,11 @@ async function WorkspaceFrame({
 }) {
   const { ws } = await params;
   const ctx = await requireWorkspace(ws);
+  const tabs = await getNavTabs(ctx.workspace.id);
+  const shown = Object.fromEntries(tabs.map((t) => [t.tab, t.shown]));
   return (
     <AppShell
-      nav={getEnabledNav(ctx.workspace.slug, ctx.modules)}
+      nav={getEnabledNav(ctx.workspace.slug, ctx.modules, shown)}
       title={ctx.workspace.name}
       titleHref={`/${ctx.workspace.slug}/more`}
       quickAdd={

@@ -5,10 +5,14 @@ import { Suspense } from "react";
 import { ArrowLeft, Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
+import { AccountingStatus } from "@/features/integrations/components/accounting-status";
+import { documentSyncStatus } from "@/features/integrations/queries";
 import { RecordPayment } from "@/features/payments/components/record-payment";
 import { RemovePayment } from "@/features/payments/components/remove-payment";
 import { listPayments } from "@/features/payments/queries";
 import { DocumentActions } from "@/features/sales/components/document-actions";
+import { ShipPanel } from "@/features/shipping/components/ship-panel";
+import { courierSetup, listShipments } from "@/features/shipping/queries";
 import { DocumentView } from "@/features/sales/components/document-view";
 import { StatusBadge } from "@/features/sales/components/status-badge";
 import { getDocument } from "@/features/sales/queries";
@@ -22,7 +26,7 @@ import { requireWorkspace } from "@/lib/workspace";
 export const metadata: Metadata = { title: "Document", robots: { index: false } };
 
 const WORD = { invoice: "invoice", quote: "quote", credit_note: "credit note" } as const;
-const METHOD = { yoco: "Yoco", payfast: "PayFast", eft: "EFT", cash: "Cash", card: "Card machine", other: "Other" } as const;
+const METHOD = { yoco: "Yoco", payfast: "PayFast", stitch: "Stitch", eft: "EFT", cash: "Cash", card: "Card machine", other: "Other" } as const;
 
 export default function DocumentPage({ params }: PageProps<"/[ws]/money/[id]">) {
   return (
@@ -38,7 +42,13 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
   const d = await getDocument(ctx, id);
   if (!d) notFound();
   const shown = effectiveStatus({ status: d.status, dueDate: d.due_date });
-  const payments = d.kind === "invoice" ? await listPayments(ctx, d.id) : [];
+  const sent = d.status !== "draft" && d.status !== "void";
+  const [payments, syncStatus, courier, shipments] = await Promise.all([
+    d.kind === "invoice" ? listPayments(ctx, d.id) : Promise.resolve([]),
+    d.kind !== "quote" && d.status !== "draft" ? documentSyncStatus(ctx, d.id) : Promise.resolve([]),
+    d.kind === "invoice" && sent ? courierSetup(ctx) : Promise.resolve(null),
+    d.kind === "invoice" ? listShipments(ctx, d.id) : Promise.resolve([]),
+  ]);
   const balance = balanceCents({ totalCents: d.total_cents, paidCents: d.paid_cents, creditedCents: d.credited_cents });
   const canRecord =
     d.kind === "invoice" && ctx.role !== "accountant" && !["draft", "void", "paid"].includes(d.status) && balance > 0;
@@ -79,7 +89,18 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
         clientPhone={d.contacts.phone}
         clientEmail={d.contacts.email}
       />
+      <AccountingStatus slug={ws} documentId={d.id} statuses={syncStatus} canSend={ctx.role !== "staff" && sent} />
       {canRecord && <RecordPayment slug={ws} documentId={d.id} balanceCents={balance} />}
+      {d.kind === "invoice" && (courier || shipments.length > 0) && (
+        <ShipPanel
+          slug={ws}
+          documentId={d.id}
+          shipments={shipments}
+          recipient={{ name: d.contacts.name, email: d.contacts.email ?? "", mobile_number: d.contacts.phone?.replace(/^\+27/, "0") ?? "" }}
+          canBook={!!courier && sent && ctx.role !== "accountant"}
+          ready={!!courier?.collection && !!courier.contact}
+        />
+      )}
       {payments.length > 0 && (
         <section aria-labelledby="payments-heading" className="rounded-2xl border bg-card p-5 shadow-card">
           <h2 id="payments-heading" className="font-semibold">
@@ -95,7 +116,7 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="font-medium tabular-nums">{formatMoney(p.amount_cents)}</span>
-                  {canRemove && p.method !== "yoco" && p.method !== "payfast" && (
+                  {canRemove && p.method !== "yoco" && p.method !== "payfast" && p.method !== "stitch" && (
                     <RemovePayment slug={ws} documentId={d.id} paymentId={p.id} label={`${formatMoney(p.amount_cents)} on ${formatDate(p.paid_on)}`} />
                   )}
                 </span>
