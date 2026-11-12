@@ -169,3 +169,15 @@ export async function proofLink(slug: string, path: string): Promise<string | nu
   const { data } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60);
   return data?.signedUrl ?? null;
 }
+
+export async function setAutoReminders(slug: string, on: boolean): Promise<{ ok: boolean }> {
+  const ctx = await managers(slug);
+  if (!ctx) return { ok: false };
+  const supabase = await createServerClient();
+  const { error } = await supabase
+    .from("workspace_settings")
+    .update({ auto_reminders: on === true })
+    .eq("workspace_id", ctx.workspace.id);
+  revalidatePath(`/${slug}/settings/payments`);
+  return { ok: !error };
+}

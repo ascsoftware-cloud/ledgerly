@@ -21,13 +21,14 @@ export async function getPaymentSettings(ctx: WorkspaceContext) {
       .select("id, provider, mode, merchant_id, webhook_id, status")
       .eq("workspace_id", ctx.workspace.id)
       .eq("status", "active"),
-    supabase.from("workspace_settings").select("bank_details").eq("workspace_id", ctx.workspace.id).maybeSingle(),
+    supabase.from("workspace_settings").select("bank_details, auto_reminders").eq("workspace_id", ctx.workspace.id).maybeSingle(),
   ]);
   const connections = z.array(connectionRow).catch([]).parse(conns.data ?? []);
   return {
     yoco: connections.find((c) => c.provider === "yoco") ?? null,
     payfast: connections.find((c) => c.provider === "payfast") ?? null,
     bank: (settings.data?.bank_details as Partial<BankDetails> | null) ?? null,
+    autoReminders: settings.data?.auto_reminders === true,
   };
 }
 

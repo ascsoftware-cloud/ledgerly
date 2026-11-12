@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { PaymentSettings } from "@/features/payments/components/payment-settings";
+import { RemindersSwitch } from "@/features/payments/components/reminders-switch";
 import { getPaymentSettings } from "@/features/payments/queries";
 import { requireWorkspace } from "@/lib/workspace";
 
@@ -32,6 +33,7 @@ async function Settings({ params }: { params: PageProps<"/[ws]/settings/payments
         <h1 className="text-2xl font-semibold tracking-tight">Getting paid</h1>
         <p className="text-muted-foreground">Choose how clients can pay your invoices. Set up any or all.</p>
       </div>
+      <RemindersSwitch slug={ws} initial={s.autoReminders} />
       <PaymentSettings slug={ws} yoco={s.yoco} payfast={s.payfast} bank={s.bank} />
     </div>
   );

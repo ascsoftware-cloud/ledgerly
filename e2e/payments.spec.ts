@@ -152,3 +152,18 @@ test("a signed Yoco notification marks the invoice paid, once; forgeries are ref
   const unknown = await request.post(`/api/webhooks/yoco/8e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e`, { data: body, headers });
   expect(unknown.status()).toBe(404);
 });
+
+test("reminders are off until switched on, and quick add starts a quote", async ({ page }) => {
+  const { home } = await sentInvoice(page, "remind");
+  await page.goto(`${home}/settings/payments`);
+  const toggle = page.getByRole("switch", { name: "Send payment reminders automatically" });
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+  await expect(page.getByText("Reminders are on")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("switch", { name: "Send payment reminders automatically" })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("button", { name: "Quick add" }).filter({ visible: true }).click();
+  await page.getByRole("menuitem", { name: "New quote" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "New quote" }).filter({ visible: true })).toBeVisible();
+});
