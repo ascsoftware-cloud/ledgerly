@@ -9,8 +9,9 @@ export function parseCsv(input: string): { headers: string[]; rows: string[][] }
   const text = input.replace(/^﻿/, "");
   if (!text.trim()) return { headers: [], rows: [] };
 
-  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
-  const delimiter = (firstLine.match(/;/g)?.length ?? 0) > (firstLine.match(/,/g)?.length ?? 0) ? ";" : ",";
+  // Judge the delimiter on the first ten lines: bank exports often open with a title line that has none.
+  const sample = text.split(/\r?\n/, 10).join("\n");
+  const delimiter = (sample.match(/;/g)?.length ?? 0) > (sample.match(/,/g)?.length ?? 0) ? ";" : ",";
 
   const records: string[][] = [];
   let row: string[] = [];

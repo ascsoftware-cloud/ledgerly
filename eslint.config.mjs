@@ -17,6 +17,7 @@ const SERVICE_ROLE_ALLOWED = [
   // Payment checkouts read the business's own provider keys from Vault.
   "src/server/payments/checkout.ts",
   "src/server/payments/connections.ts",
+  "src/server/bookings/create.ts",
   "src/features/account/delete-account.ts",
   "supabase/functions/**",
 ];

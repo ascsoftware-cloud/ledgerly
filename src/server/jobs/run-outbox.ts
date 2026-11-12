@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { DocumentEmailInput } from "./email-template";
+import type { BookingEmailInput, DocumentEmailInput } from "./email-template";
 import { processOutbox, type OutboxRow } from "./outbox-core";
 import { logTransport, resendTransport, type Transport } from "./transport";
 
@@ -20,10 +20,10 @@ function transportFromEnv(): Transport {
 const rowSchema = z.object({
   id: z.uuid(),
   workspace_id: z.uuid(),
-  template: z.enum(["document", "reminder"]),
+  template: z.enum(["document", "reminder", "booking_confirmed", "booking_reminder"]),
   to_address: z.string(),
   reply_to: z.string().nullable(),
-  payload: z.object({ document_id: z.uuid().optional(), message: z.string().nullable().optional() }),
+  payload: z.object({ document_id: z.uuid().optional(), booking_id: z.uuid().optional(), message: z.string().nullable().optional() }),
 });
 
 const docSchema = z.object({
@@ -37,6 +37,15 @@ const docSchema = z.object({
   public_token: z.string(),
   contacts: z.object({ name: z.string() }),
   workspaces: z.object({ name: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
+});
+
+const bookingSchema = z.object({
+  status: z.enum(["confirmed", "cancelled"]),
+  starts_at: z.string(),
+  customer_name: z.string(),
+  token: z.string(),
+  services: z.object({ name: z.string(), duration_min: z.coerce.number() }),
+  workspaces: z.object({ name: z.string(), slug: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
 });
 
 /** Sends what is due in the outbox. Runs from /api/jobs/outbox and right after an email is queued. */
@@ -71,6 +80,25 @@ export async function runOutbox(limit = 20) {
         dueDate: d.data.due_date,
         link: `${siteUrl()}/p/${d.data.public_token}`,
         message,
+      };
+    },
+    loadBooking: async (bookingId, workspaceId): Promise<BookingEmailInput | "cancelled" | null> => {
+      const { data } = await db
+        .from("bookings")
+        .select("status, starts_at, ends_at, customer_name, token, services(name, duration_min), workspaces(name, slug, workspace_settings(business_name))")
+        .eq("id", bookingId)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      const b = bookingSchema.safeParse(data);
+      if (!b.success) return null;
+      if (b.data.status === "cancelled") return "cancelled";
+      return {
+        businessName: b.data.workspaces.workspace_settings?.business_name || b.data.workspaces.name,
+        customerName: b.data.customer_name,
+        serviceName: b.data.services.name,
+        startsAt: b.data.starts_at,
+        durationMin: b.data.services.duration_min,
+        icsLink: `${siteUrl()}/book/${b.data.workspaces.slug}/${b.data.token}.ics`,
       };
     },
     send: transportFromEnv(),

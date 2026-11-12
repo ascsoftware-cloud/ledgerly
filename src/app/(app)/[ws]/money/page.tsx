@@ -5,6 +5,7 @@ import { FileText, Plus, ScrollText } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
+import { MoneySections } from "@/features/expenses/components/money-sections";
 import { StatusBadge } from "@/features/sales/components/status-badge";
 import { listDocuments } from "@/features/sales/queries";
 import { balanceCents, effectiveStatus } from "@/features/sales/status";
@@ -60,6 +61,8 @@ async function Money({
           </div>
         )}
       </header>
+
+      <MoneySections slug={ws} current="sales" showBank={ctx.role !== "staff"} />
 
       <nav aria-label="Document types" className="inline-flex rounded-xl bg-muted p-1">
         {TABS.map((t) => (

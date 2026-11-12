@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/dates";
+import { whenLabel } from "@/features/bookings/booking";
 import { formatMoney } from "@/lib/money";
 
 export function escapeHtml(s: string): string {
@@ -61,5 +62,37 @@ ${p(`<strong>${escapeHtml(line)}</strong>`)}
 <p style="margin:16px 0 0;font-size:12px;color:#566176;text-align:center">Reply to this email to reach ${escapeHtml(d.businessName)}. Sent with Ledgerly.</p>
 </div></body></html>`;
 
+  return { subject, html, text };
+}
+
+export type BookingEmailInput = {
+  businessName: string;
+  customerName: string;
+  serviceName: string;
+  startsAt: string;
+  durationMin: number;
+  icsLink: string;
+};
+
+/** Booking confirmation or 24-hour reminder. Times are SAST; every value is escaped. */
+export function buildBookingEmail(b: BookingEmailInput, kind: "confirmed" | "reminder"): { subject: string; html: string; text: string } {
+  const when = whenLabel(b.startsAt);
+  const subject = `${kind === "reminder" ? "Reminder" : "Booked"}: ${b.serviceName} on ${when}`;
+  const first = b.customerName.trim().split(/\s+/)[0] ?? b.customerName;
+  const lead = kind === "reminder" ? `A reminder of your booking with ${b.businessName}.` : `Your booking with ${b.businessName} is confirmed.`;
+  const detail = `${b.serviceName}, ${when} (${b.durationMin} minutes).`;
+  const text = [`Hi ${first},`, "", lead, "", detail, "", `Add it to your calendar: ${b.icsLink}`, "", `Reply to this email to reach ${b.businessName}.`].join("\n");
+  const p = (s: string) => `<p style="margin:0 0 16px">${s}</p>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f7f8fa;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px">
+<div style="background:#ffffff;border:1px solid #e2e6ec;border-radius:16px;padding:28px">
+${p(`Hi ${escapeHtml(first)},`)}
+${p(escapeHtml(lead))}
+${p(`<strong>${escapeHtml(detail)}</strong>`)}
+<p style="margin:24px 0"><a href="${escapeHtml(b.icsLink)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">Add to calendar</a></p>
+<p style="margin:0;font-size:13px;color:#566176">Reply to this email to reach ${escapeHtml(b.businessName)}.</p>
+</div>
+</div>
+</body></html>`;
   return { subject, html, text };
 }

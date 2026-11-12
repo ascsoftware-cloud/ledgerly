@@ -1,0 +1,12 @@
+drop function if exists public.get_booking_ics(text);
+drop function if exists public.create_booking(text, uuid, timestamptz, text, text, text, text);
+drop function if exists public.get_available_slots(text, uuid, date);
+drop function if exists public.get_booking_page(text);
+drop function if exists app.booking_workspace(text);
+drop trigger if exists quest_on_booking_enabled on public.workspace_settings;
+drop function if exists app.quest_on_booking_enabled();
+drop table if exists public.bookings, public.availability_rules, public.services;
+delete from public.outbox where template in ('booking_confirmed', 'booking_reminder');
+alter table public.outbox drop constraint outbox_template_check;
+alter table public.outbox add constraint outbox_template_check check (template in ('document', 'reminder'));
+alter table public.workspace_settings drop column if exists booking_enabled;
