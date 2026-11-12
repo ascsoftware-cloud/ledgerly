@@ -42,6 +42,7 @@ async function WorkspaceFrame({
               { label: "New quote", href: `/${ctx.workspace.slug}/money/new?kind=quote` },
               { label: "Add client", href: `/${ctx.workspace.slug}/clients/new` },
               { label: "Log expense", href: `/${ctx.workspace.slug}/money/expenses/new` },
+              { label: "Add task", href: `/${ctx.workspace.slug}/work/tasks/new` },
               { label: "Add deal", href: `/${ctx.workspace.slug}/clients/pipeline` },
             ]
       }
