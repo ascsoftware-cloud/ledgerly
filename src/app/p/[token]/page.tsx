@@ -7,13 +7,14 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AcceptQuote } from "@/features/sales/components/accept-quote";
 import { PayButtons } from "@/features/sales/components/pay-buttons";
 import { availableProviders } from "@/server/payments/checkout";
+import { amountDueNow } from "@/server/payments/amounts";
+import { MarkViewed } from "@/features/sales/components/mark-viewed";
 import { DocumentView } from "@/features/sales/components/document-view";
 import { publicToViewData } from "@/features/sales/public";
 import { loadPublicDocument } from "@/features/sales/public-data";
 import { balanceCents } from "@/features/sales/status";
 import { formatDate, todaySAST } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
-import { createServerClient } from "@/lib/supabase/server";
 
 // Shared links must never appear in search results.
 export const metadata: Metadata = { title: "Your document", robots: { index: false, follow: false } };
@@ -45,16 +46,10 @@ async function PublicDocument({
   if (res.kind === "missing") notFound();
   const doc = res.doc;
 
-  // First open lets the business know. Failure here never blocks the page.
-  const supabase = await createServerClient();
-  await supabase.rpc("mark_document_viewed", { p_token: token }).then(
-    () => undefined,
-    () => undefined,
-  );
-
   const view = publicToViewData(doc);
   const providers = doc.kind === "invoice" ? await availableProviders(token) : [];
   const balance = balanceCents(view);
+  const due = amountDueNow(view);
   const quoteOpen = doc.kind === "quote" && (doc.status === "sent" || doc.status === "viewed");
   const expired = quoteOpen && doc.due_date !== null && doc.due_date < todaySAST();
 
@@ -82,8 +77,16 @@ async function PublicDocument({
         <section aria-label="Amount due" className="rounded-2xl bg-accent p-5">
           {balance > 0 ? (
             <>
-              <p className="text-sm text-muted-foreground">Amount due{doc.due_date ? ` by ${formatDate(doc.due_date)}` : ""}</p>
-              <p className="text-3xl font-semibold tracking-tight">{formatMoney(balance)}</p>
+              <p className="text-sm text-muted-foreground">
+                {due.isDeposit ? "Deposit due now" : "Amount due"}
+                {!due.isDeposit && doc.due_date ? ` by ${formatDate(doc.due_date)}` : ""}
+              </p>
+              <p className="text-3xl font-semibold tracking-tight">{formatMoney(due.cents)}</p>
+              {due.isDeposit && (
+                <p className="text-sm text-muted-foreground">
+                  {formatMoney(balance)} in total{doc.due_date ? ` by ${formatDate(doc.due_date)}` : ""}
+                </p>
+              )}
               {sp.paid === "1" && (
                 <p role="status" className="mt-2 text-sm font-medium">
                   Thanks! Your payment is being confirmed. This page updates once it is through.
@@ -128,6 +131,7 @@ async function PublicDocument({
       )}
 
       <DocumentView d={view} />
+      <MarkViewed token={token} />
     </>
   );
 }

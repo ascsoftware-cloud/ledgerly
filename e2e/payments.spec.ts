@@ -167,3 +167,22 @@ test("reminders are off until switched on, and quick add starts a quote", async 
   await page.getByRole("menuitem", { name: "New quote" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "New quote" }).filter({ visible: true })).toBeVisible();
 });
+
+test("a payment above what is owed is refused, and a mistaken one can be removed", async ({ page }) => {
+  await sentInvoice(page, "undo");
+  await page.getByRole("button", { name: "Record a payment" }).click();
+  const form = page.getByRole("form", { name: "Record a payment" });
+  await form.getByLabel("Amount (R)").fill("20 000");
+  await form.getByRole("button", { name: "Save payment" }).click();
+  await expect(form.getByRole("alert")).toContainText("more than what is still owed");
+
+  await form.getByLabel("Amount (R)").fill("500");
+  await form.getByRole("button", { name: "Save payment" }).click();
+  await expect(page.getByText("Part paid", { exact: true })).toBeVisible();
+  const payments = page.getByRole("region", { name: "Payments" });
+  await payments.getByRole("button", { name: /Remove payment R 500,00/ }).click();
+  await payments.getByRole("button", { name: "Yes, remove it" }).click();
+  await expect(page.getByText("Payment removed")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Payments" })).toHaveCount(0);
+  await expect(page.getByRole("article", { name: "Invoice" })).toContainText("R 2 000,00");
+});

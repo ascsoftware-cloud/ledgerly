@@ -3,7 +3,7 @@ import { resolve4 } from "node:dns/promises";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { centsToPayfastAmount } from "./amounts";
+import { amountDueNow, centsToPayfastAmount } from "./amounts";
 import { PAYFAST_FIELD_ORDER, PAYFAST_HOSTS, payfastSignature } from "./payfast";
 
 /**
@@ -19,7 +19,7 @@ const secretsRow = z.object({
   provider: z.enum(["yoco", "payfast"]),
   mode: z.enum(["test", "live"]),
   merchant_id: z.string().nullable(),
-  status: z.enum(["active", "disabled"]),
+  status: z.enum(["pending", "active", "disabled"]),
   secret: z.string().nullable(),
   passphrase: z.string().nullable(),
   webhook_secret: z.string().nullable(),
@@ -58,18 +58,23 @@ export type CheckoutStart =
   | { ok: true; kind: "form"; action: string; fields: [string, string][] }
   | { ok: false; message: string };
 
-/** Creates a checkout for what is still owed on an invoice, and hands back where to send the payer. */
+/** Creates a checkout for what is due now (deposit, or the balance), and hands back where to send the payer. */
 export async function startCheckout(token: string, provider: Provider): Promise<CheckoutStart> {
   const db = createAdminClient();
   const { data: doc } = await db
     .from("sales_documents")
-    .select("id, workspace_id, kind, status, number, total_cents, paid_cents, credited_cents, public_token")
+    .select("id, workspace_id, kind, status, number, total_cents, paid_cents, credited_cents, deposit_cents, public_token")
     .eq("public_token", token)
     .maybeSingle();
   if (!doc || doc.kind !== "invoice" || ["draft", "void", "paid"].includes(doc.status as string)) {
     return { ok: false, message: "This invoice can't be paid online." };
   }
-  const balance = Number(doc.total_cents) - Number(doc.paid_cents) - Number(doc.credited_cents);
+  const { cents: balance } = amountDueNow({
+    totalCents: Number(doc.total_cents),
+    paidCents: Number(doc.paid_cents),
+    creditedCents: Number(doc.credited_cents),
+    depositCents: Number(doc.deposit_cents),
+  });
   if (balance <= 0) return { ok: false, message: "This invoice is already paid." };
 
   const { data: conn } = await db

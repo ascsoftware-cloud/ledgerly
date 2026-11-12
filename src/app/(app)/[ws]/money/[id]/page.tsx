@@ -6,6 +6,7 @@ import { ArrowLeft, Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { RecordPayment } from "@/features/payments/components/record-payment";
+import { RemovePayment } from "@/features/payments/components/remove-payment";
 import { listPayments } from "@/features/payments/queries";
 import { DocumentActions } from "@/features/sales/components/document-actions";
 import { DocumentView } from "@/features/sales/components/document-view";
@@ -41,6 +42,7 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
   const balance = balanceCents({ totalCents: d.total_cents, paidCents: d.paid_cents, creditedCents: d.credited_cents });
   const canRecord =
     d.kind === "invoice" && ctx.role !== "accountant" && !["draft", "void", "paid"].includes(d.status) && balance > 0;
+  const canRemove = ctx.role === "owner" || ctx.role === "admin";
   const shareUrl = `${siteUrl()}/p/${d.public_token}`;
   const whatsappText = `Hi ${d.contacts.name.split(" ")[0]}, here is your ${WORD[d.kind]} ${d.number ?? ""} from ${d.business.name} for ${formatMoney(d.total_cents)}: ${shareUrl}`;
 
@@ -91,7 +93,12 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
                   {p.reference ? ` · ${p.reference}` : ""}
                   {p.proof_path ? " · proof attached" : ""}
                 </span>
-                <span className="font-medium tabular-nums">{formatMoney(p.amount_cents)}</span>
+                <span className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums">{formatMoney(p.amount_cents)}</span>
+                  {canRemove && p.method !== "yoco" && p.method !== "payfast" && (
+                    <RemovePayment slug={ws} documentId={d.id} paymentId={p.id} label={`${formatMoney(p.amount_cents)} on ${formatDate(p.paid_on)}`} />
+                  )}
+                </span>
               </li>
             ))}
           </ul>

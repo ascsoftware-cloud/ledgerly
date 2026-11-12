@@ -8,7 +8,7 @@ import {
   verifyPayfastItn,
 } from "./payfast";
 import { verifyYocoWebhook } from "./yoco";
-import { centsToPayfastAmount } from "./amounts";
+import { amountDueNow, centsToPayfastAmount } from "./amounts";
 
 describe("phpUrlencode (PayFast's encoding rules)", () => {
   test.each([
@@ -125,5 +125,27 @@ describe("Yoco webhook signature (Standard Webhooks)", () => {
     ["missing headers", { signature: "" }, "headers"],
   ])("refuses %s", (_n, patch, reason) => {
     expect(verifyYocoWebhook({ secret, id, timestamp, signature, body, now: at, ...patch })).toEqual({ ok: false, reason });
+  });
+});
+
+describe("amountDueNow (what the client is asked to pay online)", () => {
+  const inv = { totalCents: 1_000_000, paidCents: 0, creditedCents: 0, depositCents: 500_000 };
+  test("before the deposit is in, the deposit is due", () => {
+    expect(amountDueNow(inv)).toEqual({ cents: 500_000, isDeposit: true });
+  });
+  test("a part-paid deposit asks only for the rest of the deposit", () => {
+    expect(amountDueNow({ ...inv, paidCents: 200_000 })).toEqual({ cents: 300_000, isDeposit: true });
+  });
+  test("once the deposit is paid, the balance is due", () => {
+    expect(amountDueNow({ ...inv, paidCents: 500_000 })).toEqual({ cents: 500_000, isDeposit: false });
+  });
+  test("without a deposit, the whole balance is due", () => {
+    expect(amountDueNow({ ...inv, depositCents: 0, paidCents: 100 })).toEqual({ cents: 999_900, isDeposit: false });
+  });
+  test("a credit note can leave less owing than the deposit", () => {
+    expect(amountDueNow({ ...inv, creditedCents: 800_000 })).toEqual({ cents: 200_000, isDeposit: true });
+  });
+  test("nothing is due on a settled invoice", () => {
+    expect(amountDueNow({ ...inv, paidCents: 1_000_000 })).toEqual({ cents: 0, isDeposit: false });
   });
 });

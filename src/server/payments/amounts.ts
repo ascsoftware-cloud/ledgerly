@@ -10,3 +10,18 @@ export function payfastAmountToCents(s: string | null): number | null {
   const cents = Number(whole) * 100 + Number(frac.padEnd(2, "0"));
   return s.trim().startsWith("-") ? -cents : cents;
 }
+
+/**
+ * What a client pays online right now: the rest of the deposit while it is not yet in,
+ * otherwise everything still owed. Never more than what is owed.
+ */
+export function amountDueNow(d: { totalCents: number; paidCents: number; creditedCents: number; depositCents: number }): {
+  cents: number;
+  isDeposit: boolean;
+} {
+  const owed = Math.max(d.totalCents - d.paidCents - d.creditedCents, 0);
+  if (owed > 0 && d.depositCents > 0 && d.paidCents < d.depositCents) {
+    return { cents: Math.min(d.depositCents - d.paidCents, owed), isDeposit: true };
+  }
+  return { cents: owed, isDeposit: false };
+}

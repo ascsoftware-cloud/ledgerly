@@ -91,8 +91,8 @@ begin
   yoco1 := public.connect_payment_provider(ws, 'yoco', 'test', null, 'sk_test_abcdefghijklmnop', null);
   yoco2 := public.connect_payment_provider(ws, 'yoco', 'test', null, 'sk_test_qrstuvwxyz012345', null);
   pf := public.connect_payment_provider(ws, 'payfast', 'test', '10000100', '46f0cd694581a', 'jt7NOE43FZPn');
-  select count(*) into n from public.payment_connections where workspace_id = ws and provider = 'yoco' and status = 'active';
-  r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' reconnecting replaces the old connection');
+  select count(*) into n from public.payment_connections where workspace_id = ws and provider = 'yoco' and status = 'pending';
+  r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' a Yoco key waits as pending until its webhook is attached');
   select count(*) into n from public.quest_steps where workspace_id = ws and key = 'get_paid_setup' and completed_at is not null;
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' connecting ticks "Set up how you get paid"');
   begin
@@ -116,6 +116,8 @@ begin
   exception when sqlstate 'LDG03' then r := r || 'PASS a malformed webhook secret is refused'::text;
   end;
   perform public.attach_yoco_webhook(yoco2, 'wh_1', 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');
+  select count(*) into n from public.payment_connections where workspace_id = ws and provider = 'yoco' and status = 'active';
+  r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' attaching the webhook makes it the one active connection');
   reset role;
 
   perform set_config('request.jwt.claims', json_build_object('sub', acc, 'role', 'authenticated')::text, true);

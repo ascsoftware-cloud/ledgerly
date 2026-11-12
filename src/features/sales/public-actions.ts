@@ -51,3 +51,17 @@ export async function payOnline(token: string, provider: "yoco" | "payfast"): Pr
   }
   return startCheckout(token, provider);
 }
+
+/**
+ * Called from the page once it has loaded in a real browser, so link previews and mail
+ * scanners (which do not run scripts) never count as the client opening it. The database
+ * also ignores opens by the business's own team.
+ */
+export async function markViewed(token: string): Promise<void> {
+  if (!isToken(token)) return;
+  const supabase = await createServerClient();
+  await supabase.rpc("mark_document_viewed", { p_token: token }).then(
+    () => undefined,
+    () => undefined,
+  );
+}

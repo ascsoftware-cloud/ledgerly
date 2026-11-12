@@ -6,6 +6,7 @@ import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireWorkspace } from "@/lib/workspace";
+import { removeYocoWebhook, retireReplacedConnection } from "@/server/payments/connections";
 import { sendErrorMessage } from "@/features/sales/status";
 import { bankDetailsSchema, manualPaymentSchema, MAX_PROOF_BYTES, payfastSchema, PROOF_TYPES, yocoSchema } from "./schema";
 
@@ -71,7 +72,7 @@ export async function connectYoco(slug: string, _prev: FormResult, form: FormDat
           : "Couldn't finish connecting to Yoco. Nothing was saved. Try again.",
     };
   }
-  const { error: attachError } = await supabase.rpc("attach_yoco_webhook", {
+  const { data: replaced, error: attachError } = await supabase.rpc("attach_yoco_webhook", {
     p_connection: connectionId,
     p_webhook_id: body.id ?? "",
     p_webhook_secret: body.secret,
@@ -80,6 +81,8 @@ export async function connectYoco(slug: string, _prev: FormResult, form: FormDat
     await supabase.rpc("disconnect_payment_provider", { p_connection: connectionId });
     return { status: "error", message: "Couldn't finish connecting to Yoco. Nothing was saved." };
   }
+  // The new key is live; the old connection (if any) is now disabled. Tidy it away.
+  if (typeof replaced === "string") await retireReplacedConnection(replaced, ctx.workspace.id);
   revalidatePath(`/${slug}/settings/payments`);
   return { status: "saved", message: `Yoco connected (${mode === "live" ? "live" : "test"} mode). Your clients can now pay by card.` };
 }
@@ -107,6 +110,8 @@ export async function disconnectProvider(slug: string, connectionId: string): Pr
   if (!z.uuid().safeParse(connectionId).success) return { ok: false };
   const ctx = await managers(slug);
   if (!ctx) return { ok: false };
+  // Remove our webhook at Yoco while its key still exists (no-op for PayFast or another workspace's id).
+  await removeYocoWebhook(connectionId, ctx.workspace.id);
   const supabase = await createServerClient();
   const { error } = await supabase.rpc("disconnect_payment_provider", { p_connection: connectionId });
   revalidatePath(`/${slug}/settings/payments`);
@@ -161,10 +166,23 @@ export async function recordPayment(slug: string, documentId: string, _prev: For
   };
 }
 
+/** Owner/admin: undo a mistaken EFT, cash or card-machine entry. Card payments via Yoco/PayFast stay. */
+export async function removePayment(slug: string, documentId: string, paymentId: string): Promise<{ ok: boolean; message?: string }> {
+  if (!z.uuid().safeParse(paymentId).success || !z.uuid().safeParse(documentId).success) return { ok: false };
+  const ctx = await managers(slug);
+  if (!ctx) return { ok: false, message: "Only owners and admins can remove payments." };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("remove_payment", { p_payment: paymentId });
+  if (error) return { ok: false, message: error.code === "LDG03" ? error.message : "Couldn't remove that payment." };
+  revalidatePath(`/${slug}/money/${documentId}`);
+  revalidatePath(`/${slug}/money`);
+  return { ok: true };
+}
+
 /** A short-lived link to view one proof of payment (members only, via storage rules). */
 export async function proofLink(slug: string, path: string): Promise<string | null> {
   const ctx = await requireWorkspace(slug);
-  if (!path.startsWith(`${ctx.workspace.id}/`)) return null;
+  if (typeof path !== "string" || !path.startsWith(`${ctx.workspace.id}/`)) return null;
   const supabase = await createServerClient();
   const { data } = await supabase.storage.from("payment-proofs").createSignedUrl(path, 60);
   return data?.signedUrl ?? null;
