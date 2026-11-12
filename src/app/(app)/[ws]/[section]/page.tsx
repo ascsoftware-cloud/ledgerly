@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Briefcase, LogOut, Package, Users, Wallet } from "lucide-react";
+import { Briefcase, LogOut, Package, Wallet } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
@@ -14,7 +14,6 @@ export const metadata: Metadata = { robots: { index: false } };
 /** Sections that arrive in later phases show a clear "on its way" screen, not a 404. */
 const COMING = {
   money: { title: "Money", icon: Wallet, body: "Invoices, quotes and expenses arrive in the next update." },
-  clients: { title: "Clients", icon: Users, body: "Your client list and pipeline arrive in the next update." },
   work: { title: "Work", icon: Briefcase, body: "Projects, tasks and bookings are on their way." },
   stock: { title: "Stock", icon: Package, body: "Products and stock levels are on their way." },
 } as const;
