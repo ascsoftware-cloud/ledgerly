@@ -2,17 +2,39 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+/**
+ * The service-role client bypasses row-level security, so only these places may use it.
+ * Adding a path here is a security decision: review it as one.
+ */
+const SERVICE_ROLE_ALLOWED = [
+  "src/lib/supabase/admin.ts",
+  "src/app/api/webhooks/**",
+  "src/features/account/delete-account.ts",
+  "supabase/functions/**",
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
+  {
+    files: ["**/*.{ts,tsx,mts}"],
+    ignores: SERVICE_ROLE_ALLOWED,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/supabase/admin", "**/supabase/admin"],
+              message:
+                "The service-role client bypasses RLS. It may only be imported by webhooks, scheduled functions and account deletion.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "playwright-report/**", "test-results/**"]),
 ]);
 
 export default eslintConfig;
