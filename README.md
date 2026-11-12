@@ -29,6 +29,9 @@ Copy `.env.example` to `.env.local` and fill it in. `.env.local` is never commit
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard > Project Settings > API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same page, "Publishable key" |
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page, "Secret key". Server only. Never prefix with `NEXT_PUBLIC_` |
+| `RESEND_API_KEY` | Resend > API Keys (step 13 below). Sends invoices, quotes and reminders |
+| `EMAIL_FROM` | A sender on your verified Resend domain, e.g. `Ledgerly <invoices@mail.yourdomain.co.za>` |
+| `JOBS_SECRET` | Must equal the Vault secret `jobs_secret` (see section D). Lets the database's scheduled jobs call the app |
 
 ## Owner set-up checklist (sign-in)
 
@@ -66,3 +69,17 @@ Supabase project: **Ledgerly** (`znufbvcjqdrpcyqiofrz`, region eu-west-1).
 17. Authentication > Sign In / Providers > Email: set "Email OTP expiration" to `600` seconds and "Email OTP length" to `6`.
 
 Until steps 11 to 14 are done, Supabase's built-in mailer still works for testing, limited to a few emails an hour and only to members of your Supabase organisation.
+
+## Owner set-up checklist (getting paid and sending email)
+
+### D. Sending invoices, quotes and reminders by email
+18. In Vercel > the project > Settings > Environment Variables (Production), add `RESEND_API_KEY` and `EMAIL_FROM` (table above).
+19. Supabase dashboard > Integrations > Vault: open the secret `jobs_secret` and copy its value. Add it in Vercel as `JOBS_SECRET`. The Vault secret `site_url` must be your live domain (it is set to `https://business.ascsoftware.co.za`).
+20. Redeploy in Vercel so the new variables load. Emails queue while these are missing and go out once they are set.
+
+### E. Card and instant EFT payments (each business connects its own account)
+Ledgerly never holds client money: each business pastes its own keys on **More > Getting paid**. Keys are stored encrypted in Supabase Vault, not in the database tables.
+21. **Yoco:** in the Yoco Business Portal, open the online payments (developer) section and find your API keys. Paste the secret key (`sk_test_…` to try it out, `sk_live_…` for real payments). Ledgerly registers its own webhook with Yoco when you connect.
+22. **PayFast:** in the PayFast dashboard's settings, find the developer (integration) settings. Paste the Merchant ID, Merchant key and the passphrase you set there. Use a sandbox account from [sandbox.payfast.co.za](https://sandbox.payfast.co.za) to try it out first.
+23. **EFT:** add your bank details on the same page. They appear on every invoice, and you record EFT payments by hand.
+24. Optional: switch on **Payment reminders** on the same page. Clients with an email address get a reminder 3 days before an invoice is due, on the day, and 3 days after.
