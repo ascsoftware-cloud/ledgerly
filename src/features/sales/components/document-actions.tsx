@@ -3,10 +3,12 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Ban, Copy, FilePlus2, FileMinus, MessageCircle, Pencil, Send, Trash2 } from "lucide-react";
+import { Ban, Copy, FilePlus2, FileMinus, Mail, MessageCircle, Pencil, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { convertQuote, creditNote, deleteDraft, sendDocument, voidDocument } from "../actions";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { convertQuote, creditNote, deleteDraft, emailDocument, sendDocument, voidDocument } from "../actions";
 import type { ShownStatus } from "../status";
 
 export function DocumentActions({
@@ -19,6 +21,7 @@ export function DocumentActions({
   shareUrl,
   whatsappText,
   clientPhone,
+  clientEmail,
 }: {
   slug: string;
   id: string;
@@ -29,10 +32,15 @@ export function DocumentActions({
   shareUrl: string;
   whatsappText: string;
   clientPhone: string | null;
+  clientEmail: string | null;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmVoid, setConfirmVoid] = useState(false);
+  // A new id each time the email form opens: pressing Send twice still sends one email.
+  const [emailing, setEmailing] = useState<{ requestId: string } | null>(null);
+  const [to, setTo] = useState(clientEmail ?? "");
+  const [message, setMessage] = useState("");
   const canWrite = role !== "accountant";
   const canManage = role === "owner" || role === "admin";
   const isDraft = status === "draft";
@@ -79,6 +87,14 @@ export function DocumentActions({
       ) : (
         status !== "void" && (
           <>
+            <Button
+              variant="outline"
+              size="touch"
+              aria-expanded={!!emailing}
+              onClick={() => setEmailing(emailing ? null : { requestId: crypto.randomUUID() })}
+            >
+              <Mail className="size-5" aria-hidden /> Email it
+            </Button>
             <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={buttonVariants({ size: "touch" })}>
               <MessageCircle className="size-5" aria-hidden /> Send on WhatsApp
             </a>
@@ -123,6 +139,37 @@ export function DocumentActions({
               ))}
           </>
         )
+      )}
+      {emailing && (
+        <form
+          aria-label="Email this document"
+          noValidate
+          className="w-full space-y-3 rounded-2xl border bg-card p-4 shadow-card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            start(async () => {
+              const res = await emailDocument(slug, id, { to, message, requestId: emailing.requestId });
+              if (!res.ok) toast.error(res.message);
+              else {
+                toast.success(`Email on its way to ${to}`);
+                setEmailing(null);
+                router.refresh();
+              }
+            });
+          }}
+        >
+          <label className="block space-y-1 text-sm font-medium">
+            To
+            <Input type="email" inputMode="email" value={to} onChange={(e) => setTo(e.target.value)} className="h-12 text-base" />
+          </label>
+          <label className="block space-y-1 text-sm font-medium">
+            Message <span className="font-normal text-muted-foreground">(optional)</span>
+            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} className="text-base" />
+          </label>
+          <Button type="submit" size="touch" disabled={pending || !to}>
+            {pending ? "Sending…" : "Send email"}
+          </Button>
+        </form>
       )}
     </div>
   );

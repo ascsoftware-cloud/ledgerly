@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireWorkspace } from "@/lib/workspace";
+import { runOutbox } from "@/server/jobs/run-outbox";
 import { draftSchema } from "./schema";
 import { sendErrorMessage } from "./status";
 
@@ -130,5 +132,41 @@ export async function voidDocument(slug: string, id: string): Promise<ActionResu
   const { error } = await supabase.rpc("void_document", { p_id: id });
   if (error) return { ok: false, message: sendErrorMessage(error) };
   revalidatePath(`/${slug}/money/${id}`);
+  return { ok: true };
+}
+
+const emailInput = z.object({
+  to: z.string().trim().toLowerCase().pipe(z.email("That email address doesn't look right.")),
+  message: z.string().max(1000, "Keep the message under 1 000 characters.").optional(),
+  requestId: z.uuid(),
+});
+
+/** Queues the email (once per press, by requestId), then starts sending straight away. */
+export async function emailDocument(
+  slug: string,
+  id: string,
+  input: { to: string; message?: string; requestId: string },
+): Promise<ActionResult> {
+  if (!z.uuid().safeParse(id).success) return { ok: false, message: "That document doesn't exist." };
+  const parsed = emailInput.safeParse(input);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the email." };
+  const ctx = await writable(slug);
+  if (!ctx) return { ok: false, message: "Your role can't send emails." };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("queue_document_email", {
+    p_doc: id,
+    p_to: parsed.data.to,
+    p_message: parsed.data.message?.trim() || null,
+    p_request: parsed.data.requestId,
+  });
+  if (error) return { ok: false, message: sendErrorMessage(error) };
+  // Send now rather than waiting for the next scheduled run. Failures stay queued and retry.
+  after(async () => {
+    try {
+      await runOutbox(10);
+    } catch (e) {
+      console.error("outbox run after queue failed", (e as Error).message);
+    }
+  });
   return { ok: true };
 }

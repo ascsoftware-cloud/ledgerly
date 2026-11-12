@@ -67,6 +67,7 @@ async function Document({ params }: { params: PageProps<"/[ws]/money/[id]">["par
         shareUrl={shareUrl}
         whatsappText={whatsappText}
         clientPhone={d.contacts.phone}
+        clientEmail={d.contacts.email}
       />
       <DocumentView d={toViewData(d)} />
     </div>
