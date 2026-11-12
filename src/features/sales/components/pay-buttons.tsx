@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { payOnline } from "../public-actions";
 
-const LABEL = { yoco: "Pay by card (Yoco)", payfast: "Pay with PayFast" } as const;
+const LABEL = { yoco: "Pay by card (Yoco)", payfast: "Pay with PayFast", stitch: "Pay from your bank (Stitch)" } as const;
+type Provider = keyof typeof LABEL;
 
-/** Hands the payer to the business's own Yoco or PayFast checkout. No card details touch Ledgerly. */
-export function PayButtons({ token, providers }: { token: string; providers: ("yoco" | "payfast")[] }) {
+/** Hands the payer to the business's own Yoco, PayFast or Stitch checkout. No card or bank details touch Ledgerly. */
+export function PayButtons({ token, providers }: { token: string; providers: Provider[] }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function pay(provider: "yoco" | "payfast") {
+  function pay(provider: Provider) {
     setError(null);
     start(async () => {
       const r = await payOnline(token, provider);
@@ -45,7 +46,8 @@ export function PayButtons({ token, providers }: { token: string; providers: ("y
       <div className="flex flex-wrap gap-2">
         {providers.map((p) => (
           <Button key={p} size="touch" disabled={pending} onClick={() => pay(p)}>
-            <CreditCard className="size-5" aria-hidden /> {pending ? "Opening…" : LABEL[p]}
+            {p === "stitch" ? <Landmark className="size-5" aria-hidden /> : <CreditCard className="size-5" aria-hidden />}{" "}
+            {pending ? "Opening…" : LABEL[p]}
           </Button>
         ))}
       </div>

@@ -42,8 +42,8 @@ export async function acceptQuote(token: string, _prev: AcceptState, form: FormD
 }
 
 /** The payer taps Pay: create a checkout for the balance and send them to the provider. */
-export async function payOnline(token: string, provider: "yoco" | "payfast"): Promise<CheckoutStart> {
-  if (!isToken(token) || (provider !== "yoco" && provider !== "payfast")) {
+export async function payOnline(token: string, provider: "yoco" | "payfast" | "stitch"): Promise<CheckoutStart> {
+  if (!isToken(token) || (provider !== "yoco" && provider !== "payfast" && provider !== "stitch")) {
     return { ok: false, message: "This link isn't valid." };
   }
   if (!(await rateLimit("pay-ip", await requestIp(), 20, 3600))) {

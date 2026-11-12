@@ -6,9 +6,10 @@ import type { BankDetails } from "./schema";
 
 const connectionRow = z.object({
   id: z.uuid(),
-  provider: z.enum(["yoco", "payfast"]),
+  provider: z.enum(["yoco", "payfast", "stitch"]),
   mode: z.enum(["test", "live"]),
   merchant_id: z.string().nullable(),
+  client_id: z.string().nullable().optional(),
   webhook_id: z.string().nullable(),
   status: z.enum(["active", "disabled"]),
 });
@@ -18,7 +19,7 @@ export async function getPaymentSettings(ctx: WorkspaceContext) {
   const [conns, settings] = await Promise.all([
     supabase
       .from("payment_connections")
-      .select("id, provider, mode, merchant_id, webhook_id, status")
+      .select("id, provider, mode, merchant_id, client_id, webhook_id, status")
       .eq("workspace_id", ctx.workspace.id)
       .eq("status", "active"),
     supabase.from("workspace_settings").select("bank_details, auto_reminders").eq("workspace_id", ctx.workspace.id).maybeSingle(),
@@ -27,6 +28,7 @@ export async function getPaymentSettings(ctx: WorkspaceContext) {
   return {
     yoco: connections.find((c) => c.provider === "yoco") ?? null,
     payfast: connections.find((c) => c.provider === "payfast") ?? null,
+    stitch: connections.find((c) => c.provider === "stitch") ?? null,
     bank: (settings.data?.bank_details as Partial<BankDetails> | null) ?? null,
     autoReminders: settings.data?.auto_reminders === true,
   };
@@ -34,7 +36,7 @@ export async function getPaymentSettings(ctx: WorkspaceContext) {
 
 const paymentRow = z.object({
   id: z.uuid(),
-  method: z.enum(["yoco", "payfast", "eft", "cash", "card", "other"]),
+  method: z.enum(["yoco", "payfast", "stitch", "eft", "cash", "card", "other"]),
   amount_cents: z.coerce.number(),
   paid_on: z.string(),
   reference: z.string().nullable(),
