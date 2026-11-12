@@ -5,6 +5,7 @@ import { Building2, FileUp, Plus, Search, Users } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
+import { ClientsTabs } from "@/features/clients/components/clients-tabs";
 import { UndoArchive } from "@/features/clients/components/undo-archive";
 import { getContact, listContacts } from "@/features/clients/queries";
 import { requireWorkspace } from "@/lib/workspace";
@@ -54,6 +55,7 @@ async function Clients({
           </div>
         )}
       </header>
+      <ClientsTabs slug={ws} current="list" />
 
       {(contacts.length > 0 || q) && (
         <form role="search" className="relative">
