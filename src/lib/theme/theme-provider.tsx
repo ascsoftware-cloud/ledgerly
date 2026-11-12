@@ -6,7 +6,7 @@ import {
   useContext,
   useLayoutEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { DEFAULT_ACCENT, isAccent, type Accent, type Mode } from "./accents";
@@ -20,12 +20,16 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const EVENT = "ledgerly:theme";
+
+// Used only when localStorage is blocked, so choices still work for this visit.
+const memory = new Map<string, string>();
 
 function read(key: string): string | null {
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(key) ?? memory.get(key) ?? null;
   } catch {
-    return null;
+    return memory.get(key) ?? null;
   }
 }
 
@@ -33,8 +37,22 @@ function write(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
   } catch {
-    // Private mode or storage disabled: the choice lasts for this page only.
+    memory.set(key, value);
   }
+  window.dispatchEvent(new Event(EVENT));
+}
+
+function subscribe(onChange: () => void) {
+  window.addEventListener(EVENT, onChange);
+  window.addEventListener("storage", onChange); // another tab changed it
+  return () => {
+    window.removeEventListener(EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function isMode(v: unknown): v is Mode {
+  return v === "light" || v === "dark" || v === "system";
 }
 
 function resolve(mode: Mode): "light" | "dark" {
@@ -48,28 +66,35 @@ function apply(mode: Mode, accent: Accent) {
   root.setAttribute("data-accent", accent);
 }
 
+/**
+ * Holds the user's colour mode and accent. The saved values live in localStorage and are
+ * read through useSyncExternalStore: the server and the first client render both use the
+ * defaults (so hydration matches), then React re-renders with the saved values. The
+ * inline THEME_SCRIPT has already applied them to <html>, so there is no visual flash.
+ */
 export function ThemeProvider({
   children,
-  accent: initialAccent = DEFAULT_ACCENT,
-  mode: initialMode = "system",
+  accent: defaultAccent = DEFAULT_ACCENT,
+  mode: defaultMode = "system",
 }: {
   children: ReactNode;
   accent?: Accent;
   mode?: Mode;
 }) {
-  const [accent, setAccentState] = useState<Accent>(() => {
-    if (typeof window === "undefined") return initialAccent;
-    const saved = read(ACCENT_KEY);
-    return isAccent(saved) ? saved : initialAccent;
-  });
-  const [mode, setModeState] = useState<Mode>(() => {
-    if (typeof window === "undefined") return initialMode;
-    const saved = read(THEME_KEY);
-    return saved === "light" || saved === "dark" || saved === "system" ? saved : initialMode;
-  });
+  const savedMode = useSyncExternalStore(
+    subscribe,
+    () => read(THEME_KEY),
+    () => null,
+  );
+  const savedAccent = useSyncExternalStore(
+    subscribe,
+    () => read(ACCENT_KEY),
+    () => null,
+  );
+  const mode = isMode(savedMode) ? savedMode : defaultMode;
+  const accent = isAccent(savedAccent) ? savedAccent : defaultAccent;
 
-  // Re-apply after hydration (React's dev remount clears attributes it does not own)
-  // and follow the OS setting while in "system" mode.
+  // Keep <html> in step with state, and follow the OS setting while in "system" mode.
   useLayoutEffect(() => {
     apply(mode, accent);
     if (mode !== "system") return;
@@ -79,15 +104,8 @@ export function ThemeProvider({
     return () => mq.removeEventListener("change", onChange);
   }, [mode, accent]);
 
-  const setAccent = useCallback((next: Accent) => {
-    write(ACCENT_KEY, next);
-    setAccentState(next);
-  }, []);
-
-  const setMode = useCallback((next: Mode) => {
-    write(THEME_KEY, next);
-    setModeState(next);
-  }, []);
+  const setAccent = useCallback((next: Accent) => write(ACCENT_KEY, next), []);
+  const setMode = useCallback((next: Mode) => write(THEME_KEY, next), []);
 
   const value = useMemo(
     () => ({ accent, mode, setAccent, setMode }),

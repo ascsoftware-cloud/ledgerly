@@ -222,7 +222,7 @@ Public access never queries tables directly: `/p`, `/book` and `/portal` call na
 ## 12. Security, compliance and launch
 
 - RLS on every table; cross-tenant and role tests in `supabase/tests`, run in CI against a Supabase branch (no Docker on the dev machine).
-- Security headers and a nonce-based CSP; no `dangerouslySetInnerHTML`; SameSite cookies and origin checks on server actions; rate limits on auth, public pages and webhooks.
+- Security headers and a strict CSP. Scripts allow `'unsafe-inline'` for now: in Next.js 16.4 per-request nonces force every page to render dynamically and conflict with cache components, which would cost the Lighthouse target. A hash/SRI-based policy is evaluated in Phase 7. No `dangerouslySetInnerHTML` except the one constant theme script in the root layout; SameSite cookies and origin checks on server actions; rate limits on auth, public pages and webhooks.
 - Private storage buckets; signed URLs of 60 seconds for downloads.
 - Secrets only in Vercel and Supabase environment settings; `.env.example` committed; a secret scan in CI.
 - Supabase security advisor run at the end of every phase; all warnings fixed.
