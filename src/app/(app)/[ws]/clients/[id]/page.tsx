@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, Building2, Mail, MapPin, MessageCircle, Pencil, Phone } from "lucide-react";
+import { ArrowLeft, Building2, FileText, Mail, MapPin, MessageCircle, Pencil, Phone } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { ArchiveButton } from "@/features/clients/components/archive-button";
@@ -52,6 +52,9 @@ async function Client({ params }: { params: PageProps<"/[ws]/clients/[id]">["par
         </div>
         {canWrite && !c.deletedAt && (
           <div className="flex flex-wrap gap-2">
+            <Link href={`/${ws}/money/new?kind=invoice&client=${c.id}`} className={buttonVariants({ size: "touch" })}>
+              <FileText className="size-5" aria-hidden /> New invoice
+            </Link>
             <Link href={`/${ws}/clients/${c.id}/edit`} className={buttonVariants({ variant: "outline", size: "touch" })}>
               <Pencil className="size-5" aria-hidden /> Edit
             </Link>
