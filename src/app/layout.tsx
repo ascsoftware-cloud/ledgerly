@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme/theme-provider";
 import { THEME_SCRIPT } from "@/lib/theme/theme-script";
 import "./globals.css";
@@ -36,7 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster position="bottom-center" offset={88} />
+        </ThemeProvider>
       </body>
     </html>
   );

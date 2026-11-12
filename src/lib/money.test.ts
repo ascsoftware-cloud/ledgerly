@@ -122,3 +122,22 @@ describe("calcTotals", () => {
     });
   });
 });
+
+// The same fixtures run in supabase/tests/0009_sales.test.sql against the database's
+// app.calc_line and recalc_document. If either side changes, both tests must change.
+describe("parity with the database", () => {
+  test("three-line invoice totals 11899 + 1635 = 13534", () => {
+    expect(
+      calcTotals([
+        { quantity: 3, unitCents: 3333, discountPct: 0, vatRate: 15 },
+        { quantity: 1, unitCents: 999, discountPct: 10, vatRate: 15 },
+        { quantity: 7, unitCents: 143, discountPct: 0, vatRate: 0 },
+      ]),
+    ).toMatchObject({ subtotalCents: 11899, vatCents: 1635, totalCents: 13534 });
+  });
+  test("50% deposit on 10001 is 5001", () => {
+    expect(
+      calcTotals([{ quantity: 1, unitCents: 10001, discountPct: 0, vatRate: 0 }], { type: "pct", value: 50 }).depositCents,
+    ).toBe(5001);
+  });
+});

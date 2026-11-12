@@ -20,5 +20,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
+    // Tests never send real email.
+    env: { EMAIL_TRANSPORT: "log" },
   },
 });

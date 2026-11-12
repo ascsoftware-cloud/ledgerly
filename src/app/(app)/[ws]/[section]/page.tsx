@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Briefcase, LogOut, Package, Users, Wallet } from "lucide-react";
+import { Briefcase, CreditCard, LogOut, Package } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
@@ -13,8 +13,6 @@ export const metadata: Metadata = { robots: { index: false } };
 
 /** Sections that arrive in later phases show a clear "on its way" screen, not a 404. */
 const COMING = {
-  money: { title: "Money", icon: Wallet, body: "Invoices, quotes and expenses arrive in the next update." },
-  clients: { title: "Clients", icon: Users, body: "Your client list and pipeline arrive in the next update." },
   work: { title: "Work", icon: Briefcase, body: "Projects, tasks and bookings are on their way." },
   stock: { title: "Stock", icon: Package, body: "Products and stock levels are on their way." },
 } as const;
@@ -56,6 +54,19 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             ))}
           </ul>
         </section>
+
+        {(ctx.role === "owner" || ctx.role === "admin") && (
+          <Link
+            href={`/${ctx.workspace.slug}/settings/payments`}
+            className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+          >
+            <CreditCard className="size-5 text-primary" aria-hidden />
+            <span className="flex-1">
+              Getting paid
+              <span className="block text-sm font-normal text-muted-foreground">Bank details for EFT, Yoco and PayFast</span>
+            </span>
+          </Link>
+        )}
 
         <section aria-labelledby="account-heading" className="rounded-2xl border bg-card p-5 shadow-card">
           <h2 id="account-heading" className="text-sm font-medium text-muted-foreground">

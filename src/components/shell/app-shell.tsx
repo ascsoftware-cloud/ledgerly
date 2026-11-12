@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore, type ReactNode } from "react";
 import { BottomTabs } from "./bottom-tabs";
+import { QuickAdd, type QuickAddItem } from "./quick-add";
 import type { NavItem } from "./nav";
 import { Sidebar } from "./sidebar";
 
@@ -33,6 +34,7 @@ export function AppShell({
   nav,
   title = "Ledgerly",
   titleHref,
+  quickAdd = [],
   children,
 }: {
   nav: NavItem[];
@@ -40,6 +42,8 @@ export function AppShell({
   title?: string;
   /** Where the title links to (the workspace switcher). */
   titleHref?: string;
+  /** Shortcuts behind the "+" button. Empty for read-only roles. */
+  quickAdd?: QuickAddItem[];
   children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(
@@ -66,10 +70,11 @@ export function AppShell({
       >
         Skip to content
       </a>
-      <Sidebar items={nav} title={title} titleHref={titleHref} collapsed={collapsed} onToggle={toggle} />
+      <Sidebar items={nav} title={title} titleHref={titleHref} collapsed={collapsed} onToggle={toggle} quickAdd={quickAdd} />
       <main id="main" className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-10">
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
+      <QuickAdd items={quickAdd} variant="fab" />
       <BottomTabs items={nav} />
     </div>
   );

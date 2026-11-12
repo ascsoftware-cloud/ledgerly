@@ -11,6 +11,11 @@ const SERVICE_ROLE_ALLOWED = [
   // Calls public.hit_rate_limit only (sign-in and public endpoint throttling).
   "src/lib/rate-limit.ts",
   "src/app/api/webhooks/**",
+  // Scheduled and queued work (outbox sending). Every query there filters by workspace itself.
+  "src/app/api/jobs/**",
+  "src/server/jobs/**",
+  // Payment checkouts read the business's own provider keys from Vault.
+  "src/server/payments/checkout.ts",
   "src/features/account/delete-account.ts",
   "supabase/functions/**",
 ];

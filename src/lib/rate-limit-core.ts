@@ -5,9 +5,9 @@ import { createHash } from "node:crypto";
  * This file holds the logic; src/lib/rate-limit.ts wires it to the database.
  */
 
-export type LimitKind = "otp-email" | "otp-ip" | "otp-verify" | "oauth-ip";
+export type LimitKind = "otp-email" | "otp-ip" | "otp-verify" | "oauth-ip" | "public-ip" | "accept-ip" | "pay-ip";
 
-type RpcResult = { data: boolean | null; error: { message: string } | null };
+type RpcResult = { data: boolean | null; error: { message: string; code?: string } | null };
 type RpcCall = (args: { p_bucket: string; max_hits: number; window_seconds: number }) => Promise<RpcResult>;
 
 /** "otp-email:<sha256>". The raw email or IP never leaves this server. */
@@ -43,7 +43,7 @@ export function createRateLimiter(opts: {
       window_seconds: windowSeconds,
     });
     if (error || data === null) {
-      warn(`Rate limit check failed (${kind}).`);
+      warn(`Rate limit check failed (${kind}): ${error?.code ?? "no data"} ${error?.message ?? ""}`.trim());
       return !opts.production;
     }
     return data;

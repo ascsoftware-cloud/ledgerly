@@ -34,6 +34,16 @@ async function WorkspaceFrame({
       nav={getEnabledNav(ctx.workspace.slug, ctx.modules)}
       title={ctx.workspace.name}
       titleHref={`/${ctx.workspace.slug}/more`}
+      quickAdd={
+        ctx.role === "accountant"
+          ? []
+          : [
+              { label: "New invoice", href: `/${ctx.workspace.slug}/money/new?kind=invoice` },
+              { label: "New quote", href: `/${ctx.workspace.slug}/money/new?kind=quote` },
+              { label: "Add client", href: `/${ctx.workspace.slug}/clients/new` },
+              { label: "Add deal", href: `/${ctx.workspace.slug}/clients/pipeline` },
+            ]
+      }
     >
       <WorkspaceTheme accent={ctx.workspace.accent} mode={ctx.workspace.mode} />
       {children}

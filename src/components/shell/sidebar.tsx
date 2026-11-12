@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { NAV_ICONS } from "./icons";
+import { QuickAdd, type QuickAddItem } from "./quick-add";
 import { isActive, type NavItem } from "./nav";
 
 /** Desktop navigation. Collapses to icons; links keep their names for screen readers. */
@@ -13,8 +14,10 @@ export function Sidebar({
   titleHref,
   collapsed,
   onToggle,
+  quickAdd = [],
 }: {
   items: NavItem[];
+  quickAdd?: QuickAddItem[];
   title: string;
   titleHref?: string;
   collapsed: boolean;
@@ -51,6 +54,7 @@ export function Sidebar({
           <ToggleIcon className="size-5" aria-hidden />
         </button>
       </div>
+      {!collapsed && quickAdd.length > 0 && <QuickAdd items={quickAdd} variant="sidebar" />}
       <ul className="flex flex-col gap-1">
         {items.map((item) => {
           const active = isActive(pathname, item, items);
