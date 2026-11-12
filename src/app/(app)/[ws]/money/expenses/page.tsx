@@ -61,7 +61,7 @@ async function Expenses({
           </Link>
         )}
       </header>
-      <MoneySections slug={ws} current="expenses" />
+      <MoneySections slug={ws} current="expenses" showBank={ctx.role !== "staff"} />
       {canWrite && typeof sp.archived === "string" && /^[0-9a-f-]{36}$/.test(sp.archived) && <UndoExpenseArchive slug={ws} id={sp.archived} />}
 
       <section aria-label="Month" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent p-4">

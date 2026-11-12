@@ -6,11 +6,11 @@ const SECTIONS = [
   { key: "bank", label: "Bank", path: "/bank" },
 ] as const;
 
-/** Money in, money out, and the bank statement that ties them together. */
-export function MoneySections({ slug, current }: { slug: string; current: (typeof SECTIONS)[number]["key"] }) {
+/** Money in, money out, and the bank statement that ties them together. Staff get no Bank tab. */
+export function MoneySections({ slug, current, showBank = true }: { slug: string; current: (typeof SECTIONS)[number]["key"]; showBank?: boolean }) {
   return (
     <nav aria-label="Money sections" className="inline-flex rounded-xl bg-muted p-1">
-      {SECTIONS.map((s) => (
+      {SECTIONS.filter((s) => showBank || s.key !== "bank").map((s) => (
         <Link
           key={s.key}
           href={`/${slug}/money${s.path}`}

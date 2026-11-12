@@ -62,7 +62,7 @@ async function Money({
         )}
       </header>
 
-      <MoneySections slug={ws} current="sales" />
+      <MoneySections slug={ws} current="sales" showBank={ctx.role !== "staff"} />
 
       <nav aria-label="Document types" className="inline-flex rounded-xl bg-muted p-1">
         {TABS.map((t) => (
