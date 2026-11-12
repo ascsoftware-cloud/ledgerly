@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CreditCard, LogOut, Package } from "lucide-react";
+import { CalendarClock, CreditCard, LogOut, Package } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
@@ -63,6 +63,18 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             <span className="flex-1">
               Getting paid
               <span className="block text-sm font-normal text-muted-foreground">Bank details for EFT, Yoco and PayFast</span>
+            </span>
+          </Link>
+        )}
+        {(ctx.role === "owner" || ctx.role === "admin") && (
+          <Link
+            href={`/${ctx.workspace.slug}/settings/bookings`}
+            className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+          >
+            <CalendarClock className="size-5 text-primary" aria-hidden />
+            <span className="flex-1">
+              Booking page
+              <span className="block text-sm font-normal text-muted-foreground">Services, opening hours and your public booking link</span>
             </span>
           </Link>
         )}

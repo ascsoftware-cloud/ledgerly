@@ -3,9 +3,10 @@ import Link from "next/link";
 const TABS = [
   { key: "tasks", label: "Tasks", path: "" },
   { key: "projects", label: "Projects", path: "/projects" },
+  { key: "bookings", label: "Bookings", path: "/bookings" },
 ] as const;
 
-/** Work: what needs doing, grouped into projects. Bookings join in Task 4.5. */
+/** Work: what needs doing, the projects it belongs to, and who has booked a time. */
 export function WorkTabs({ slug, current }: { slug: string; current: (typeof TABS)[number]["key"] }) {
   return (
     <nav aria-label="Work sections" className="inline-flex rounded-xl bg-muted p-1">

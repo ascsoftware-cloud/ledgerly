@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildDocumentEmail, escapeHtml } from "./email-template";
+import { buildBookingEmail, buildDocumentEmail, escapeHtml } from "./email-template";
 import { processOutbox, type OutboxRow } from "./outbox-core";
 import { resendTransport } from "./transport";
 
@@ -129,5 +129,71 @@ describe("resendTransport", () => {
     expect(r.ok).toBe(false);
     expect(JSON.stringify(r)).not.toContain("re_secret_value");
     expect(JSON.stringify(r)).toContain("429");
+  });
+});
+
+describe("booking emails", () => {
+  const booking = {
+    businessName: "Thandi's <Salon>",
+    customerName: "Lerato Dube",
+    serviceName: "Wash & blow-dry",
+    startsAt: "2026-11-20T08:00:00.000Z",
+    durationMin: 45,
+    icsLink: "https://business.ascsoftware.co.za/book/thandis-salon/abc.ics",
+  };
+  const bookingRow = (id: string, template: "booking_confirmed" | "booking_reminder"): OutboxRow => ({
+    ...row(id),
+    template,
+    payload: { booking_id: "9e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e" },
+  });
+
+  test("a confirmation names the service, the SAST time and the business, all escaped", () => {
+    const e = buildBookingEmail(booking, "confirmed");
+    expect(e.subject).toBe("Booked: Wash & blow-dry on Fri 20 Nov 2026, 10:00");
+    expect(e.html).toContain("Thandi&#39;s &lt;Salon&gt;");
+    expect(e.html).not.toContain("<Salon>");
+    expect(e.text).toContain("45 minutes");
+    expect(e.text).toContain(booking.icsLink);
+  });
+
+  test("a reminder says so", () => {
+    expect(buildBookingEmail(booking, "reminder").subject).toBe("Reminder: Wash & blow-dry on Fri 20 Nov 2026, 10:00");
+  });
+
+  test("the worker sends booking emails from the booking's own workspace", async () => {
+    const asked: unknown[] = [];
+    const sent: string[] = [];
+    await processOutbox({
+      claim: async () => [bookingRow("c", "booking_confirmed"), bookingRow("r", "booking_reminder")],
+      load: async () => null,
+      loadBooking: async (...args) => {
+        asked.push(args);
+        return booking;
+      },
+      send: async (m) => {
+        sent.push(m.subject);
+        return { ok: true, id: "x" };
+      },
+      finish: async () => {},
+    });
+    expect(asked).toEqual([
+      ["9e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e", "1e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e"],
+      ["9e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e", "1e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e"],
+    ]);
+    expect(sent).toEqual(["Booked: Wash & blow-dry on Fri 20 Nov 2026, 10:00", "Reminder: Wash & blow-dry on Fri 20 Nov 2026, 10:00"]);
+  });
+
+  test("a reminder for a cancelled booking is dropped, not sent and not retried", async () => {
+    const finished: unknown[] = [];
+    let sends = 0;
+    await processOutbox({
+      claim: async () => [bookingRow("r", "booking_reminder")],
+      load: async () => null,
+      loadBooking: async () => "cancelled",
+      send: async () => (sends++, { ok: true, id: "x" }),
+      finish: async (...args) => void finished.push(args),
+    });
+    expect(sends).toBe(0);
+    expect(finished).toEqual([["r", true, null, "skipped: booking cancelled"]]);
   });
 });
