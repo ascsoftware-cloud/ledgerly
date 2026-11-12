@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, FileUp } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { importContacts, type ImportResult } from "../actions";
-import { guessMapping, parseCsv } from "../csv";
+import { decodeCsv, guessMapping, parseCsv } from "../csv";
 import { IMPORT_FIELDS, MAX_IMPORT_ROWS, importRowSchema, type ImportField } from "../schema";
 
 const LABELS: Record<ImportField, string> = {
@@ -53,7 +53,7 @@ export function ImportWizard({ slug }: { slug: string }) {
       setReadError("That file is over 2 MB. Split it into smaller files.");
       return;
     }
-    const parsed = parseCsv(await f.text());
+    const parsed = parseCsv(decodeCsv(new Uint8Array(await f.arrayBuffer())));
     if (!parsed.headers.length || !parsed.rows.length) {
       setReadError("We couldn't find any rows. The first line should be the column names.");
       return;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { normalisePhone, whatsappNumber } from "@/lib/phone";
-import { guessMapping, parseCsv } from "./csv";
+import { decodeCsv, guessMapping, parseCsv } from "./csv";
 import { contactInputSchema, importRowSchema } from "./schema";
 
 describe("normalisePhone (South African numbers by default)", () => {
@@ -17,6 +17,15 @@ describe("normalisePhone (South African numbers by default)", () => {
   });
 
   test.each(["", "123", "082 123", "not a number", "+27 82 123 4567 999 999"])("%j is rejected", (input) => {
+    expect(normalisePhone(input)).toBeNull();
+  });
+
+  test("a number Excel stripped the leading 0 from is still South African", () => {
+    expect(normalisePhone("821234567")).toBe("+27821234567");
+    expect(normalisePhone("215551234")).toBe("+27215551234");
+  });
+
+  test.each(["442079460958", "12345678", "9821234567"])("bare %s with no country code or 0 is rejected, not guessed", (input) => {
     expect(normalisePhone(input)).toBeNull();
   });
 
@@ -114,5 +123,17 @@ describe("importRowSchema", () => {
     const r = importRowSchema.safeParse({ name: "Bad", email: "not-an-email" });
     expect(r.success).toBe(false);
     expect(r.error?.issues[0]?.path[0]).toBe("email");
+  });
+});
+
+describe("decodeCsv", () => {
+  test("reads UTF-8 and drops the byte-order mark", () => {
+    const bytes = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode("Name\nRenée")]);
+    expect(decodeCsv(bytes)).toBe("Name\nRenée");
+  });
+
+  test("reads Excel's Windows-1252 CSV without mangling accents", () => {
+    const bytes = new Uint8Array([0x4e, 0x61, 0x6d, 0x65, 0x0a, 0x52, 0x65, 0x6e, 0xe9, 0x65, 0x2c, 0x5a, 0x6f, 0xeb]);
+    expect(decodeCsv(bytes)).toBe("Name\nRenée,Zoë");
   });
 });

@@ -75,3 +75,18 @@ export function guessMapping(headers: string[]): Record<ImportField, number | nu
   const name = pick("name");
   return { name, email, phone, company, address };
 }
+
+/**
+ * File bytes to text. Excel on Windows saves "CSV (Comma delimited)" as Windows-1252, not
+ * UTF-8, so a file that is not valid UTF-8 is read as Windows-1252 instead of mangling
+ * accented names into question marks.
+ */
+export function decodeCsv(bytes: Uint8Array): string {
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    text = new TextDecoder("windows-1252").decode(bytes);
+  }
+  return text.replace(/^﻿/, "");
+}
