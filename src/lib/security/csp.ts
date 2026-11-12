@@ -31,7 +31,8 @@ export function buildCsp({ supabaseUrl, dev }: CspOptions): string {
     ["connect-src", "'self'", ...supabase],
     ["object-src", "'none'"],
     ["base-uri", "'self'"],
-    ["form-action", "'self'"],
+    // PayFast checkout is a form POST to its hosted page (see pay-buttons.tsx).
+    ["form-action", "'self'", "https://www.payfast.co.za", "https://sandbox.payfast.co.za"],
     ["frame-ancestors", "'none'"],
     ...(dev ? [] : [["upgrade-insecure-requests"]]),
   ];

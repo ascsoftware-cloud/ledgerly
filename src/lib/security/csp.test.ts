@@ -26,7 +26,11 @@ describe("buildCsp", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");
-    expect(csp).toContain("form-action 'self'");
+    expect(directive(csp, "form-action")?.split(" ")[1]).toBe("'self'");
+  });
+
+  test("forms may post only to this site and PayFast's hosted payment page", () => {
+    expect(directive(buildCsp(prod), "form-action")).toBe("form-action 'self' https://www.payfast.co.za https://sandbox.payfast.co.za");
   });
 
   test("the browser may talk to Supabase over https and websockets, and nowhere else", () => {
