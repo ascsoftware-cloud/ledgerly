@@ -5,6 +5,8 @@ import { CheckCircle2, Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AcceptQuote } from "@/features/sales/components/accept-quote";
+import { PayButtons } from "@/features/sales/components/pay-buttons";
+import { availableProviders } from "@/server/payments/checkout";
 import { DocumentView } from "@/features/sales/components/document-view";
 import { publicToViewData } from "@/features/sales/public";
 import { loadPublicDocument } from "@/features/sales/public-data";
@@ -16,19 +18,26 @@ import { createServerClient } from "@/lib/supabase/server";
 // Shared links must never appear in search results.
 export const metadata: Metadata = { title: "Your document", robots: { index: false, follow: false } };
 
-export default function PublicDocumentPage({ params }: PageProps<"/p/[token]">) {
+export default function PublicDocumentPage({ params, searchParams }: PageProps<"/p/[token]">) {
   return (
     <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
       <Suspense fallback={<PageSkeleton variant="detail" />}>
-        <PublicDocument params={params} />
+        <PublicDocument params={params} searchParams={searchParams} />
       </Suspense>
       <p className="pt-4 text-center text-xs text-muted-foreground">Sent with Ledgerly</p>
     </main>
   );
 }
 
-async function PublicDocument({ params }: { params: PageProps<"/p/[token]">["params"] }) {
+async function PublicDocument({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/p/[token]">["params"];
+  searchParams: PageProps<"/p/[token]">["searchParams"];
+}) {
   const { token } = await params;
+  const sp = await searchParams;
   const res = await loadPublicDocument(token);
   if (res.kind === "busy") {
     return <p role="alert">Too many requests from your connection. Try again in a few minutes.</p>;
@@ -44,6 +53,7 @@ async function PublicDocument({ params }: { params: PageProps<"/p/[token]">["par
   );
 
   const view = publicToViewData(doc);
+  const providers = doc.kind === "invoice" ? await availableProviders(token) : [];
   const balance = balanceCents(view);
   const quoteOpen = doc.kind === "quote" && (doc.status === "sent" || doc.status === "viewed");
   const expired = quoteOpen && doc.due_date !== null && doc.due_date < todaySAST();
@@ -74,10 +84,27 @@ async function PublicDocument({ params }: { params: PageProps<"/p/[token]">["par
             <>
               <p className="text-sm text-muted-foreground">Amount due{doc.due_date ? ` by ${formatDate(doc.due_date)}` : ""}</p>
               <p className="text-3xl font-semibold tracking-tight">{formatMoney(balance)}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
+              {sp.paid === "1" && (
+                <p role="status" className="mt-2 text-sm font-medium">
+                  Thanks! Your payment is being confirmed. This page updates once it is through.
+                </p>
+              )}
+              {sp.failed === "1" && (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  The payment did not go through. You can try again.
+                </p>
+              )}
+              {providers.length > 0 && (
+                <div className="mt-4">
+                  <PayButtons token={token} providers={providers} />
+                </div>
+              )}
+              <p className="mt-3 text-sm text-muted-foreground">
                 {doc.business.bank_details
-                  ? `Pay by EFT using the details below, with ${doc.number} as the reference.`
-                  : `Contact ${doc.business.name} for payment details.`}
+                  ? `${providers.length ? "Or pay" : "Pay"} by EFT using the details below, with ${doc.number} as the reference.`
+                  : providers.length
+                    ? null
+                    : `Contact ${doc.business.name} for payment details.`}
               </p>
             </>
           ) : (

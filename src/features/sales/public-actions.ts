@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { createServerClient } from "@/lib/supabase/server";
+import { startCheckout, type CheckoutStart } from "@/server/payments/checkout";
 import { isToken } from "./public";
 import { requestIp } from "./public-data";
 
@@ -38,4 +39,15 @@ export async function acceptQuote(token: string, _prev: AcceptState, form: FormD
     };
   }
   return { status: "accepted", name: (data as { signer_name?: string } | null)?.signer_name ?? parsed.data.name };
+}
+
+/** The payer taps Pay: create a checkout for the balance and send them to the provider. */
+export async function payOnline(token: string, provider: "yoco" | "payfast"): Promise<CheckoutStart> {
+  if (!isToken(token) || (provider !== "yoco" && provider !== "payfast")) {
+    return { ok: false, message: "This link isn't valid." };
+  }
+  if (!(await rateLimit("pay-ip", await requestIp(), 20, 3600))) {
+    return { ok: false, message: "Too many attempts. Try again later." };
+  }
+  return startCheckout(token, provider);
 }

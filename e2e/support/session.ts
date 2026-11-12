@@ -39,8 +39,11 @@ export async function signIn(page: Page, email: string, next = "/welcome", fullN
 export async function cleanUp(userIds: string[]) {
   const db = admin();
   for (const id of userIds) {
-    await db.from("workspaces").delete().eq("created_by", id);
-    await db.auth.admin.deleteUser(id);
+    // Loud on purpose: a silent failure here once hid a real "workspace cannot be deleted" bug.
+    const ws = await db.from("workspaces").delete().eq("created_by", id);
+    if (ws.error) throw new Error(`Could not delete test workspace: ${ws.error.message}`);
+    const user = await db.auth.admin.deleteUser(id);
+    if (user.error) throw new Error(`Could not delete test user: ${user.error.message}`);
   }
 }
 
@@ -55,4 +58,17 @@ export async function publicPath(userId: string, number: string): Promise<string
     .eq("number", number)
     .single();
   return `/p/${data!.public_token}`;
+}
+
+/** A Supabase client signed in as `email` (no browser), for setting up test data as that user. */
+export async function userClient(email: string): Promise<SupabaseClient> {
+  const db = admin();
+  const { data, error } = await db.auth.admin.generateLink({ type: "magiclink", email });
+  if (error || !data.properties?.hashed_token) throw new Error(`generateLink failed: ${error?.message}`);
+  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: vErr } = await client.auth.verifyOtp({ token_hash: data.properties.hashed_token, type: "email" });
+  if (vErr) throw new Error(`verifyOtp failed: ${vErr.message}`);
+  return client;
 }

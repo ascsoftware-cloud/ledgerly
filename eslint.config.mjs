@@ -14,6 +14,8 @@ const SERVICE_ROLE_ALLOWED = [
   // Scheduled and queued work (outbox sending). Every query there filters by workspace itself.
   "src/app/api/jobs/**",
   "src/server/jobs/**",
+  // Payment checkouts read the business's own provider keys from Vault.
+  "src/server/payments/checkout.ts",
   "src/features/account/delete-account.ts",
   "supabase/functions/**",
 ];
