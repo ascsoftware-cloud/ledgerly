@@ -25,6 +25,8 @@ async function sendInvite(ctx: WorkspaceContext, email: string, role: "admin" | 
     p_email: email,
     p_role: role,
     p_token_hash: hashToken(token),
+    // The same button press again must not rotate the token a second time (its email is already queued).
+    p_request: request,
   });
   if (error || typeof inviteId !== "string") return { ok: false as const, message: dbMessage(error, "Couldn't create the invitation.") };
   const { error: qErr } = await supabase.rpc("queue_invite_email", { p_invite: inviteId, p_token: token, p_request: request });

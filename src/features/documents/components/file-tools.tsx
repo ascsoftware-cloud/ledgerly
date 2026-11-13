@@ -5,29 +5,51 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { archiveFile, archiveFolder, createFolder, fileLink, uploadFile, type FormResult } from "../actions";
+import { createClient } from "@/lib/supabase/client";
+import { archiveFile, archiveFolder, createFolder, fileLink, recordFile, type FormResult } from "../actions";
+import { FILE_TYPES, isAllowedFile, MAX_FILE_BYTES } from "../schema";
 
-export function UploadForm({ slug, folders, current }: { slug: string; folders: { id: string; name: string }[]; current: string }) {
+/** Uploads from the browser straight to the private bucket (so a 10 MB file is not squeezed through a Server Action), then records it. */
+export function UploadForm({ slug, workspaceId, folders, current }: { slug: string; workspaceId: string; folders: { id: string; name: string }[]; current: string }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
-  const [state, action, pending] = useActionState<FormResult, FormData>(async (prev, form) => {
-    const r = await uploadFile(slug, prev, form);
-    if (r.status === "saved") {
-      toast.success(r.message);
+  const [folderId, setFolderId] = useState(current !== "all" && current !== "none" ? current : "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  const upload = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const file = input.current?.files?.[0];
+    if (!file) return setError("Choose a file to upload.");
+    if (!isAllowedFile({ name: file.name, type: file.type, size: file.size })) {
+      return setError(file.size > MAX_FILE_BYTES ? "That file is over 10 MB." : "Upload a PDF, a photo (JPG, PNG, WebP), a Word or Excel file, or a text or CSV file.");
+    }
+    start(async () => {
+      const path = `${workspaceId}/${crypto.randomUUID()}/${crypto.randomUUID()}.${FILE_TYPES[file.type]}`;
+      const supabase = createClient();
+      const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) return setError("The upload didn't work. Try again.");
+      const r = await recordFile(slug, { path, name: file.name, type: file.type, size: file.size, folderId: folderId || null });
+      if (!r.ok) {
+        await supabase.storage.from("documents").remove([path]);
+        return setError(r.message);
+      }
+      toast.success("File uploaded.");
       if (input.current) input.current.value = "";
       router.refresh();
-    }
-    return r;
-  }, { status: "idle" });
+    });
+  };
+
   return (
-    <form action={action} noValidate aria-label="Upload a file" className="grid gap-3 rounded-2xl border bg-card p-5 shadow-card sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+    <form onSubmit={upload} noValidate aria-label="Upload a file" className="grid gap-3 rounded-2xl border bg-card p-5 shadow-card sm:grid-cols-[2fr_1fr_auto] sm:items-end">
       <label className="space-y-1 text-sm font-medium">
         File <span className="font-normal text-muted-foreground">(PDF, photo, Word, Excel, text; up to 10 MB)</span>
         <input ref={input} name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.csv,.docx,.xlsx" className="block w-full py-3 text-sm" />
       </label>
       <label className="space-y-1 text-sm font-medium">
         Folder
-        <select name="folderId" defaultValue={current !== "all" && current !== "none" ? current : ""} className="h-12 w-full rounded-xl border bg-background px-3 text-base">
+        <select name="folderId" value={folderId} onChange={(e) => setFolderId(e.target.value)} className="h-12 w-full rounded-xl border bg-background px-3 text-base">
           <option value="">No folder</option>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>
@@ -39,9 +61,9 @@ export function UploadForm({ slug, folders, current }: { slug: string; folders: 
       <Button type="submit" size="touch" disabled={pending}>
         {pending ? "Uploading…" : "Upload"}
       </Button>
-      {state.status === "error" && (
+      {error && (
         <p role="alert" className="text-sm text-destructive sm:col-span-3">
-          {state.message}
+          {error}
         </p>
       )}
     </form>
@@ -78,7 +100,7 @@ export function NewFolderForm({ slug }: { slug: string }) {
   );
 }
 
-export function FileActions({ slug, id, name }: { slug: string; id: string; name: string }) {
+export function FileActions({ slug, id, name, canWrite = true }: { slug: string; id: string; name: string; canWrite?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirming, setConfirming] = useState(false);
@@ -100,7 +122,7 @@ export function FileActions({ slug, id, name }: { slug: string; id: string; name
       >
         Open
       </Button>
-      {confirming ? (
+      {!canWrite ? null : confirming ? (
         <span className="flex gap-1" role="group" aria-label={`Archive ${name}?`}>
           <Button
             type="button"

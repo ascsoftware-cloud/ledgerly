@@ -143,4 +143,17 @@ test("a template becomes a contract, the client signs it in the portal, and the 
   await page.getByRole("button", { name: "Archive Lease.png" }).click();
   await page.getByRole("button", { name: "Yes, archive" }).click();
   await expect(page.getByText("File archived")).toBeVisible();
+
+  // A 2 MB file (past the 1 MB Server Action limit) uploads, and removing its folder moves it to "No folder".
+  await page.getByLabel("New folder").fill("Leases");
+  await page.getByRole("button", { name: "Add folder" }).click();
+  await expect(page.getByRole("navigation", { name: "Folders" })).toContainText("Leases");
+  await page.getByRole("link", { name: "Leases" }).click();
+  const big = Buffer.concat([FILE, Buffer.alloc(2 * 1024 * 1024)]);
+  await up.getByLabel(/^File/).setInputFiles({ name: "Big.png", mimeType: "image/png", buffer: big });
+  await up.getByRole("button", { name: "Upload" }).click();
+  await expect(page.getByRole("list", { name: "Files" })).toContainText("Big.png");
+  await page.getByRole("button", { name: "Remove folder Leases" }).click();
+  await page.getByRole("link", { name: "No folder" }).click();
+  await expect(page.getByRole("list", { name: "Files" })).toContainText("Big.png");
 });

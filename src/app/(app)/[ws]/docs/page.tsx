@@ -55,7 +55,7 @@ async function Docs({ params, searchParams }: { params: PageProps<"/[ws]/docs">[
 
       {canWrite && (
         <div className="space-y-3">
-          <UploadForm slug={ws} folders={folders} current={current} />
+          <UploadForm slug={ws} workspaceId={ctx.workspace.id} folders={folders} current={current} />
           <NewFolderForm slug={ws} />
         </div>
       )}
@@ -78,7 +78,7 @@ async function Docs({ params, searchParams }: { params: PageProps<"/[ws]/docs">[
                   {f.folder_id && folderName.get(f.folder_id) ? ` · ${folderName.get(f.folder_id)}` : ""}
                 </span>
               </span>
-              {canWrite ? <FileActions slug={ws} id={f.id} name={f.name} /> : null}
+              <FileActions slug={ws} id={f.id} name={f.name} canWrite={canWrite} />
             </li>
           ))}
         </ul>

@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -10,7 +9,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { requireWorkspace, type WorkspaceContext } from "@/lib/workspace";
 import { runOutbox } from "@/server/jobs/run-outbox";
 import { businessName, getContactForContract, getTemplate } from "./queries";
-import { builtinData, contractSchema, customFields, FILE_TYPES, fileSchema, folderSchema, isAllowedFile, MAX_FILE_BYTES, renderTemplate, templateSchema } from "./schema";
+import { builtinData, contractSchema, customFields, FILE_TYPES, fileSchema, folderSchema, isAllowedFile, renderTemplate, templateSchema } from "./schema";
 
 export type FormResult = { status: "idle" } | { status: "saved"; id: string; message: string } | { status: "error"; message: string };
 
@@ -41,49 +40,39 @@ export async function archiveFolder(slug: string, folderId: string): Promise<{ o
   const ctx = await requireWorkspace(slug);
   if (!canWrite(ctx)) return { ok: false };
   const supabase = await createServerClient();
+  // Its files go back to "No folder" (a soft-deleted folder would otherwise keep them out of sight).
+  await supabase.from("files").update({ folder_id: null }).eq("folder_id", folderId).eq("workspace_id", ctx.workspace.id);
   const { data } = await supabase.from("folders").update({ deleted_at: new Date().toISOString() }).eq("id", folderId).eq("workspace_id", ctx.workspace.id).select("id").maybeSingle();
   refresh(slug);
   return { ok: !!data };
 }
 
-/** Stores one file privately (path <workspace>/<file id>/<random>.<ext>, never built from the name) and records it. */
-export async function uploadFile(slug: string, _prev: FormResult, form: FormData): Promise<FormResult> {
-  const file = form.get("file");
-  if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a file to upload." };
-  if (!isAllowedFile({ name: file.name, type: file.type, size: file.size })) {
-    return {
-      status: "error",
-      message: file.size > MAX_FILE_BYTES ? "That file is over 10 MB." : "Upload a PDF, a photo (JPG, PNG, WebP), a Word or Excel file, or a text or CSV file.",
-    };
-  }
-  const folder = form.get("folderId");
-  const folderId = typeof folder === "string" && folder ? folder : null;
-  if (folderId !== null && !z.uuid().safeParse(folderId).success) return { status: "error", message: "Choose a folder from the list." };
+/**
+ * Records a file the browser already uploaded straight to the private bucket (a Server Action body is capped
+ * well under 10 MB). The object must exist under this workspace's folder, so a made-up path records nothing.
+ */
+export async function recordFile(slug: string, input: { path: string; name: string; type: string; size: number; folderId: string | null }): Promise<{ ok: true } | { ok: false; message: string }> {
   const ctx = await requireWorkspace(slug);
-  if (!canWrite(ctx)) return { status: "error", message: NO_WRITE };
-
-  const path = `${ctx.workspace.id}/${randomUUID()}/${randomUUID()}.${FILE_TYPES[file.type]}`;
+  if (!canWrite(ctx)) return { ok: false, message: NO_WRITE };
+  if (!isAllowedFile({ name: input.name, type: input.type, size: input.size })) return { ok: false, message: "That kind of file isn't allowed, or it is over 10 MB." };
+  const ext = FILE_TYPES[input.type];
+  const shape = new RegExp(`^${ctx.workspace.id}/[0-9a-f-]{36}/[0-9a-f-]{36}[.]${ext}$`);
+  if (!shape.test(input.path)) return { ok: false, message: "The upload didn't work. Try again." };
+  if (input.folderId !== null && !z.uuid().safeParse(input.folderId).success) return { ok: false, message: "Choose a folder from the list." };
   const supabase = await createServerClient();
-  const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type, upsert: false });
-  if (upErr) return { status: "error", message: "The upload didn't work. Try again." };
-  const { data: row, error } = await supabase
-    .from("files")
-    .insert({
-      workspace_id: ctx.workspace.id,
-      folder_id: folderId,
-      name: fileSchema.parse({ name: file.name }).name,
-      storage_path: path,
-      mime_type: file.type,
-      size_bytes: file.size,
-    })
-    .select("id")
-    .single();
-  if (error || !row) {
-    await supabase.storage.from("documents").remove([path]);
-    return { status: "error", message: error.code === "23503" ? "Choose a folder from the list." : "Couldn't save the file." };
-  }
+  const { error: missing } = await supabase.storage.from("documents").createSignedUrl(input.path, 5);
+  if (missing) return { ok: false, message: "The upload didn't work. Try again." };
+  const { error } = await supabase.from("files").insert({
+    workspace_id: ctx.workspace.id,
+    folder_id: input.folderId,
+    name: fileSchema.parse({ name: input.name }).name,
+    storage_path: input.path,
+    mime_type: input.type,
+    size_bytes: input.size,
+  });
+  if (error) return { ok: false, message: error.code === "23503" ? "Choose a folder from the list." : "Couldn't save the file." };
   refresh(slug);
-  return { status: "saved", id: row.id as string, message: "File uploaded." };
+  return { ok: true };
 }
 
 /** A 60-second link to open one file. The storage rules check membership again. */

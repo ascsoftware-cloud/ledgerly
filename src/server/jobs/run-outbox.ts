@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -59,6 +60,7 @@ const inviteSchema = z.object({
   role: z.enum(["admin", "staff", "accountant"]),
   accepted_at: z.string().nullable(),
   expires_at: z.string(),
+  token_hash: z.string(),
   invited_by: z.uuid().nullable(),
   workspaces: z.object({ name: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
 });
@@ -125,12 +127,14 @@ export async function runOutbox(limit = 20) {
     loadInvite: async (inviteId, workspaceId, token): Promise<InviteEmailInput | "closed" | null> => {
       const { data } = await db
         .from("invites")
-        .select("role, accepted_at, expires_at, invited_by, workspaces(name, workspace_settings(business_name))")
+        .select("role, accepted_at, expires_at, token_hash, invited_by, workspaces(name, workspace_settings(business_name))")
         .eq("id", inviteId)
         .eq("workspace_id", workspaceId)
         .maybeSingle();
       const i = inviteSchema.safeParse(data);
       if (!i.success) return null;
+      // A newer invitation (Send again) replaced this token: this email would carry a dead link.
+      if (createHash("sha256").update(token, "utf8").digest("hex") !== i.data.token_hash) return "closed";
       if (i.data.accepted_at !== null || Date.parse(i.data.expires_at) < Date.now()) return "closed";
       let inviterName = "";
       if (i.data.invited_by) {
