@@ -35,6 +35,7 @@ export function AppShell({
   title = "Ledgerly",
   titleHref,
   quickAdd = [],
+  bell,
   children,
 }: {
   nav: NavItem[];
@@ -44,6 +45,8 @@ export function AppShell({
   titleHref?: string;
   /** Shortcuts behind the "+" button. Empty for read-only roles. */
   quickAdd?: QuickAddItem[];
+  /** The notification bell, shown in the top corner. */
+  bell?: ReactNode;
   children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(
@@ -74,6 +77,7 @@ export function AppShell({
       <main id="main" className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-10">
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
+      {bell && <div className="fixed top-3 right-3 z-40 print:hidden">{bell}</div>}
       <QuickAdd items={quickAdd} variant="fab" />
       <BottomTabs items={nav} />
     </div>

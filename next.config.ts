@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   // Receipt photos (up to 5 MB) go through a Server Action; the default limit is 1 MB.
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   // PDF rendering uses Node APIs; keep it out of the bundler.
-  serverExternalPackages: ["@react-pdf/renderer"],
+  serverExternalPackages: ["@react-pdf/renderer", "web-push"],
   turbopack: {
     rules: {
       "*.css": {
