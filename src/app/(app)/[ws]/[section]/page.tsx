@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Bell, Blocks, CalendarClock, CreditCard, Gem, Sparkles, Users, Zap } from "lucide-react";
+import { Bell, Blocks, CalendarClock, CreditCard, Gem, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { InstallButton } from "@/components/pwa/pwa-tools";
 import { SignOutForm } from "@/components/pwa/sign-out-form";
@@ -152,6 +152,17 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           <span className="flex-1">
             Plan and billing
             <span className="block text-sm font-normal text-muted-foreground">Free or Pro, what you have used, upgrade or cancel</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/data`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <ShieldCheck className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Your data
+            <span className="block text-sm font-normal text-muted-foreground">Download everything, or delete a business or your account</span>
           </span>
         </Link>
 

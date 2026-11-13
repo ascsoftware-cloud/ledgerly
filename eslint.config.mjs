@@ -24,6 +24,8 @@ const SERVICE_ROLE_ALLOWED = [
   "src/server/ai/allowance.ts",
   // Billing: only a verified PayFast notification or the signed-in owner (checked first) may change a plan.
   "src/server/billing/service.ts",
+  // The daily purge deletes what people asked to have deleted 7 days ago (business files, rows, accounts).
+  "src/server/privacy/run-purge.ts",
   // Outside apps (Courier Guy, Shopify, Xero, Sage) read their credentials from Vault and run
   // queued jobs. Functions there take a workspace or connection id the caller already authorised.
   "src/server/integrations/**",
