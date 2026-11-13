@@ -15,10 +15,10 @@ test("a template becomes a contract, the client signs it in the portal, and the 
   test.setTimeout(90_000);
   const email = testEmail("docs");
   const owner = await signIn(page, email, "/welcome", "Dora Docs");
-  // The portal and automations are Pro features (0038): this business is upgraded the way billing would.
-  await admin().from("workspaces").update({ plan: "pro" }).eq("created_by", owner);
   created.push(owner);
   await expect(page).toHaveURL(/\/dora-[0-9a-f]{4}$/, { timeout: 15_000 });
+  // The portal and automations are Pro features (0038): this business is upgraded the way billing would.
+  await admin().from("workspaces").update({ plan: "pro" }).eq("created_by", owner);
   const home = new URL(page.url()).pathname;
 
   // A client with an email, and one sent invoice, made the way the app makes them.
