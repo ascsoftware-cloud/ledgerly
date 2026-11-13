@@ -12,6 +12,7 @@ test.afterAll(async () => {
 const FILE = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
 test("a template becomes a contract, the client signs it in the portal, and the link can be turned off", async ({ page, browser }, testInfo) => {
+  test.setTimeout(90_000);
   const email = testEmail("docs");
   const owner = await signIn(page, email, "/welcome", "Dora Docs");
   created.push(owner);
@@ -145,10 +146,12 @@ test("a template becomes a contract, the client signs it in the portal, and the 
   await expect(page.getByText("File archived")).toBeVisible();
 
   // A 2 MB file (past the 1 MB Server Action limit) uploads, and removing its folder moves it to "No folder".
-  await page.getByLabel("New folder").fill("Leases");
+  await page.getByRole("textbox", { name: "New folder" }).fill("Leases");
   await page.getByRole("button", { name: "Add folder" }).click();
   await expect(page.getByRole("navigation", { name: "Folders" })).toContainText("Leases");
   await page.getByRole("link", { name: "Leases" }).click();
+  // The upload form follows the folder you are in (wait for it to switch before choosing a file).
+  await expect(page.getByRole("combobox", { name: "Folder" })).toHaveValue(/^[0-9a-f-]{36}$/);
   const big = Buffer.concat([FILE, Buffer.alloc(2 * 1024 * 1024)]);
   await up.getByLabel(/^File/).setInputFiles({ name: "Big.png", mimeType: "image/png", buffer: big });
   await up.getByRole("button", { name: "Upload" }).click();

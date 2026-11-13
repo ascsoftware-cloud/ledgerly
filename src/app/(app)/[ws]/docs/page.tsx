@@ -55,7 +55,7 @@ async function Docs({ params, searchParams }: { params: PageProps<"/[ws]/docs">[
 
       {canWrite && (
         <div className="space-y-3">
-          <UploadForm slug={ws} workspaceId={ctx.workspace.id} folders={folders} current={current} />
+          <UploadForm key={current} slug={ws} workspaceId={ctx.workspace.id} folders={folders} current={current} />
           <NewFolderForm slug={ws} />
         </div>
       )}
