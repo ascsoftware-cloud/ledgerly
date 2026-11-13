@@ -45,7 +45,7 @@ Legend: **PASS** (evidence given) · **PENDING** (can be done by me, not done ye
 | 20 | Lighthouse 90+ on landing, login and dashboard | NOT RUN | Running Lighthouse needs downloading and executing a tool; that was blocked in this session. Run `npx lighthouse https://<site>` or PageSpeed Insights on the live site and record the scores here |
 | 21 | Billing: Free/Pro, PayFast subscription and notification, cancel without hiding data | PASS in tests / OWNER ACTION for real money | 0038 SQL 55/55; ITN verification and form building unit-tested; e2e shows the signed form, Pro unlocking, and Free limits. PayFast field names and the cancel API were checked against reference code, not a live sandbox |
 | 22 | Deploy: Vercel project, env vars, domain, HTTPS, README | PASS (deployed since Phase 1) | Live at business.ascsoftware.co.za; README and `docs/owner-setup-phase-6-7.md` list every variable and step. `www` redirect and DNS: OWNER ACTION to confirm |
-| 23 | Production smoke test | PASS locally / PENDING for production | `npm run smoke` passes against the local build (6/6). Run it against the live site after this branch is deployed |
+| 23 | Production smoke test | PASS | `BASE_URL=https://business.ascsoftware.co.za npm run smoke`: 6/6 against the live site on commit 2a99d20 (pages, health check with the database answering, manifest, security headers, robots and sitemap). Functions run in Dublin (`dub1`), next to the Supabase database; a database call now adds about 30 to 50 ms to a request. Moving the database to Cape Town would help South African users further |
 
 ## Service-role (admin client) uses
 
