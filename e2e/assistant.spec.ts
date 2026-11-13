@@ -47,6 +47,8 @@ test("the AI helper is off until switched on, then answers, counts usage and rea
 
   // Receipt scan fills the form; nothing is saved until the person saves.
   await page.goto(`${home}/money/expenses/new`);
+  // Wait for the streamed form to settle: while a page streams in, a hidden copy can briefly sit beside it.
+  await expect(page.getByRole("button", { name: "Fill in from the photo (AI)" })).toBeVisible();
   await page.getByLabel(/^Receipt/).setInputFiles({ name: "slip.png", mimeType: "image/png", buffer: PNG });
   await page.getByRole("button", { name: "Fill in from the photo (AI)" }).click();
   await expect(page.getByText("Filled in from the photo")).toBeVisible();
