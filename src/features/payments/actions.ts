@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createServerClient } from "@/lib/supabase/server";
+import { hasStorageRoom, STORAGE_FULL } from "@/lib/storage-room";
 import { requireWorkspace } from "@/lib/workspace";
 import { removeYocoWebhook, retireReplacedConnection } from "@/server/payments/connections";
 import { sendErrorMessage } from "@/features/sales/status";
@@ -174,6 +175,7 @@ export async function recordPayment(slug: string, documentId: string, _prev: For
     const ext = PROOF_TYPES[file.type];
     if (!ext) return { status: "error", message: "Proof of payment can be a photo (JPG, PNG) or a PDF." };
     if (file.size > MAX_PROOF_BYTES) return { status: "error", message: "That file is over 5 MB." };
+    if (!(await hasStorageRoom(supabase, ctx.workspace.id, file.size))) return { status: "error", message: STORAGE_FULL };
     proofPath = `${ctx.workspace.id}/${documentId}/${randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from("payment-proofs")

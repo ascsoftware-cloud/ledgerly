@@ -21,6 +21,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
     // Tests never send real email.
-    env: { EMAIL_TRANSPORT: "log", AI_PROVIDER: "mock" },
+    // PayFast sandbox demo values (public, from PayFast's documentation): nothing here can charge anyone.
+    env: { EMAIL_TRANSPORT: "log", AI_PROVIDER: "mock", PAYFAST_MERCHANT_ID: "10000100", PAYFAST_MERCHANT_KEY: "46f0cd694581a", PAYFAST_PASSPHRASE: "e2e-test-passphrase", PAYFAST_MODE: "sandbox" },
   },
 });

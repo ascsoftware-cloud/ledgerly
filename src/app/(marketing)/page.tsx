@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, FileText, MessageCircle, Sparkles, Wallet } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { formatPrice, PLANS } from "@/lib/plans";
 
 const BENEFITS = [
   {
@@ -29,9 +29,6 @@ const STEPS = [
 
 const FREE = ["10 invoices or quotes a month", "Unlimited clients and team members", "Expenses, tasks and bookings"];
 const PRO = ["Unlimited invoices and quotes", "Your own branding and client portal", "Reminders that send themselves"];
-
-/** Proposed price; owner confirms before billing is built in Phase 7. */
-const PRO_PRICE_CENTS = 19_900;
 
 export default function LandingPage() {
   return (
@@ -99,7 +96,7 @@ export default function LandingPage() {
           <PlanCard name="Free" price="R 0" note="for as long as you like" features={FREE} cta="Start free" />
           <PlanCard
             name="Pro"
-            price={formatMoney(PRO_PRICE_CENTS).replace(",00", "")}
+            price={formatPrice(PLANS.pro.priceCents)}
             note="per month, unlimited users"
             features={PRO}
             cta="Start free, upgrade later"

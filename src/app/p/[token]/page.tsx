@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CheckCircle2, Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { SentWithLedgerly } from "@/components/ledgerly-footer";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AcceptQuote } from "@/features/sales/components/accept-quote";
 import { PayButtons } from "@/features/sales/components/pay-buttons";
@@ -25,7 +26,7 @@ export default function PublicDocumentPage({ params, searchParams }: PageProps<"
       <Suspense fallback={<PageSkeleton variant="detail" />}>
         <PublicDocument params={params} searchParams={searchParams} />
       </Suspense>
-      <p className="pt-4 text-center text-xs text-muted-foreground">Sent with Ledgerly</p>
+      <SentWithLedgerly kind="document" params={params} />
     </main>
   );
 }

@@ -17,7 +17,7 @@ export async function createRule(slug: string, _prev: FormResult, form: FormData
   if (!manage(ctx.role)) return { status: "error", message: "Only owners and admins can change automations." };
   const supabase = await createServerClient();
   const { error } = await supabase.from("automation_rules").insert({ workspace_id: ctx.workspace.id, ...parsed.data });
-  if (error) return { status: "error", message: error.code === "LDG03" && error.message ? error.message : "Couldn't save the rule." };
+  if (error) return { status: "error", message: (error.code === "LDG03" || error.code === "LDG01") && error.message ? error.message : "Couldn't save the rule." };
   revalidatePath(`/${slug}/settings/automations`);
   return { status: "saved", message: "Rule added. It is checked every hour." };
 }

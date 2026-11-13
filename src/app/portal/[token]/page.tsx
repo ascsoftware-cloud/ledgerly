@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { FileSignature, Receipt } from "lucide-react";
+import { SentWithLedgerly } from "@/components/ledgerly-footer";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { loadPortal } from "@/features/portal/public-data";
 import { formatDate, todaySAST } from "@/lib/dates";
@@ -20,7 +21,7 @@ export default function PortalPage({ params }: PageProps<"/portal/[token]">) {
       <Suspense fallback={<PageSkeleton variant="list" />}>
         <Portal params={params} />
       </Suspense>
-      <p className="pt-4 text-center text-xs text-muted-foreground">Sent with Ledgerly</p>
+      <SentWithLedgerly kind="portal" params={params} />
     </main>
   );
 }

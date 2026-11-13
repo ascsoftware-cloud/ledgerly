@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
+import { hasStorageRoom, STORAGE_FULL } from "@/lib/storage-room";
 import { requireWorkspace } from "@/lib/workspace";
 import { CADENCES, type Cadence, expenseSchema, MAX_RECEIPT_BYTES, nextOccurrence, RECEIPT_TYPES } from "./schema";
 
@@ -90,6 +91,7 @@ export async function saveExpense(slug: string, expenseId: string | null, _prev:
   }
 
   if (hasFile) {
+    if (!(await hasStorageRoom(supabase, ctx.workspace.id, file.size))) return { status: "saved", id, message: `Expense saved, but the receipt wasn't added. ${STORAGE_FULL}` };
     const path = `${ctx.workspace.id}/${id}/${randomUUID()}.${RECEIPT_TYPES[file.type]}`;
     const { error: upErr } = await supabase.storage.from("receipts").upload(path, file, { contentType: file.type, upsert: false });
     if (upErr) return { status: "saved", id, message: "Expense saved, but the receipt didn't upload. Try adding it again." };

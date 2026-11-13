@@ -10,6 +10,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             Ledgerly
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1">
+            <Link href="/pricing" className={buttonVariants({ variant: "ghost", size: "touch", className: "px-3" })}>
+              Pricing
+            </Link>
             <Link
               href="/login"
               prefetch={false}

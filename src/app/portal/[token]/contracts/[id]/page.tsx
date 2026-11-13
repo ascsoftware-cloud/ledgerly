@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { SentWithLedgerly } from "@/components/ledgerly-footer";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { SignContract } from "@/features/portal/components/sign-contract";
 import { loadPortalContract } from "@/features/portal/public-data";
@@ -16,7 +17,7 @@ export default function PortalContractPage({ params }: PageProps<"/portal/[token
       <Suspense fallback={<PageSkeleton variant="detail" />}>
         <PortalContract params={params} />
       </Suspense>
-      <p className="pt-4 text-center text-xs text-muted-foreground">Sent with Ledgerly</p>
+      <SentWithLedgerly kind="portal" params={params} />
     </main>
   );
 }

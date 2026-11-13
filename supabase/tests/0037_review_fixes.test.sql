@@ -96,6 +96,7 @@ begin
   select count(*) into n from public.notifications where user_id = olga and kind = 'daily';
   r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' and running it again adds nothing (' || n || ')');
 
+  update public.workspaces set plan = 'pro' where id = ws;  -- automations are Pro (0038)
   -- 4. Automations only act from the day the rule is made, and "overdue" means after the due date
   delete from public.sales_documents where workspace_id = ws;
   insert into public.sales_documents (workspace_id, kind, status, number, contact_id, due_date, total_cents) values
