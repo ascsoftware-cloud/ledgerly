@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { scanReceipt } from "@/features/assistant/actions";
 import { Input } from "@/components/ui/input";
 import { saveExpense, type ExpenseFormResult } from "../actions";
 import { CADENCES, EXPENSE_METHODS } from "../schema";
@@ -38,6 +39,7 @@ export function ExpenseForm({
   initial,
   canRepeat = false,
   vatRegistered = false,
+  aiScan = false,
 }: {
   slug: string;
   expenseId?: string | null;
@@ -47,12 +49,31 @@ export function ExpenseForm({
   canRepeat?: boolean;
   /** Only VAT-registered businesses can claim input VAT, so only they see the VAT toggle. */
   vatRegistered?: boolean;
+  /** The AI helper is on: offer to read a receipt photo into the fields. */
+  aiScan?: boolean;
 }) {
   const router = useRouter();
   const [requestId] = useState(() => crypto.randomUUID());
   const [v, setV] = useState<ExpenseInitial>(initial ?? { ...EMPTY, includesVat: vatRegistered });
   const showVat = vatRegistered || v.includesVat;
   const [repeat, setRepeat] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [scanning, startScan] = useTransition();
+  const [scanNote, setScanNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  function scan() {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return setScanNote({ ok: false, text: "Choose a photo of the receipt first." });
+    setScanNote(null);
+    const form = new FormData();
+    form.set("receipt", file);
+    startScan(async () => {
+      const r = await scanReceipt(slug, form);
+      if (r.status === "error") return setScanNote({ ok: false, text: r.message });
+      setV((cur) => ({ ...cur, amount: r.amount, supplier: r.supplier || cur.supplier, spentOn: r.spentOn || cur.spentOn, includesVat: vatRegistered && r.includesVat }));
+      setScanNote({ ok: true, text: "Filled in from the photo. Please check the amount, supplier and date before you save." });
+    });
+  }
   const set = (k: keyof ExpenseInitial) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setV({ ...v, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
 
@@ -110,8 +131,20 @@ export function ExpenseForm({
       </label>
       <label className="space-y-1 text-sm font-medium">
         Receipt <span className="font-normal text-muted-foreground">({v.hasReceipt ? "replace — " : ""}photo or PDF, up to 5 MB)</span>
-        <input name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" className="block w-full py-3 text-sm" />
+        <input ref={fileRef} name="receipt" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" className="block w-full py-3 text-sm" />
       </label>
+      {aiScan && !expenseId && (
+        <div className="space-y-1 sm:col-span-2">
+          <Button type="button" variant="outline" size="touch" onClick={scan} disabled={scanning}>
+            {scanning ? "Reading…" : "Fill in from the photo (AI)"}
+          </Button>
+          {scanNote && (
+            <p role={scanNote.ok ? "status" : "alert"} className={scanNote.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}>
+              {scanNote.text}
+            </p>
+          )}
+        </div>
+      )}
       {canRepeat && !expenseId && (
         <label className="space-y-1 text-sm font-medium">
           This repeats <span className="font-normal text-muted-foreground">(rent, subscriptions)</span>

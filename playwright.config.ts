@@ -21,6 +21,6 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
     // Tests never send real email.
-    env: { EMAIL_TRANSPORT: "log" },
+    env: { EMAIL_TRANSPORT: "log", AI_PROVIDER: "mock" },
   },
 });

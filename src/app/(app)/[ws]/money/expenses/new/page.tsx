@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
+import { getAiStatus } from "@/features/assistant/queries";
 import { ExpenseForm } from "@/features/expenses/components/expense-form";
 import { isVatRegistered, listCategories } from "@/features/expenses/queries";
 import { requireWorkspace } from "@/lib/workspace";
@@ -22,14 +23,14 @@ async function NewExpense({ params }: { params: PageProps<"/[ws]/money/expenses/
   const { ws } = await params;
   const ctx = await requireWorkspace(ws);
   if (ctx.role === "accountant") notFound();
-  const [categories, vatRegistered] = await Promise.all([listCategories(ctx), isVatRegistered(ctx)]);
+  const [categories, vatRegistered, ai] = await Promise.all([listCategories(ctx), isVatRegistered(ctx), getAiStatus(ctx.workspace.id)]);
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link href={`/${ws}/money/expenses`} className="inline-flex h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden /> Expenses
       </Link>
       <h1 className="text-2xl font-semibold tracking-tight">Log an expense</h1>
-      <ExpenseForm slug={ws} categories={categories} canRepeat={ctx.role === "owner" || ctx.role === "admin"} vatRegistered={vatRegistered} />
+      <ExpenseForm slug={ws} categories={categories} canRepeat={ctx.role === "owner" || ctx.role === "admin"} vatRegistered={vatRegistered} aiScan={ai.enabled && ai.configured} />
     </div>
   );
 }

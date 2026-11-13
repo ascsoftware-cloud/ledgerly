@@ -1,6 +1,8 @@
 import { Suspense, type ReactNode } from "react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AppShell } from "@/components/shell/app-shell";
+import { AssistantPanel } from "@/features/assistant/components/assistant-panel";
+import { getAiStatus } from "@/features/assistant/queries";
 import { WorkspaceTheme } from "@/features/dashboard/components/workspace-theme";
 import { getEnabledNav } from "@/features/dashboard/nav";
 import { getNavTabs } from "@/features/integrations/queries";
@@ -32,12 +34,17 @@ async function WorkspaceFrame({
 }) {
   const { ws } = await params;
   const ctx = await requireWorkspace(ws);
-  const [tabs, unread] = await Promise.all([getNavTabs(ctx.workspace.id), unreadCount(ctx)]);
+  const [tabs, unread, ai] = await Promise.all([getNavTabs(ctx.workspace.id), unreadCount(ctx), getAiStatus(ctx.workspace.id)]);
   const shown = Object.fromEntries(tabs.map((t) => [t.tab, t.shown]));
   return (
     <AppShell
       nav={getEnabledNav(ctx.workspace.slug, ctx.modules, shown, ctx.role)}
-      bell={<NotificationBell slug={ctx.workspace.slug} userId={ctx.user.id} workspaceId={ctx.workspace.id} initialUnread={unread} />}
+      bell={
+        <>
+          {ai.enabled && ai.configured && <AssistantPanel slug={ctx.workspace.slug} used={ai.used} limit={ai.limit} />}
+          <NotificationBell slug={ctx.workspace.slug} userId={ctx.user.id} workspaceId={ctx.workspace.id} initialUnread={unread} />
+        </>
+      }
       title={ctx.workspace.name}
       titleHref={`/${ctx.workspace.slug}/more`}
       quickAdd={

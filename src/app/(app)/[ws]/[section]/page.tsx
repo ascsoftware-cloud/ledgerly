@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Bell, Blocks, CalendarClock, CreditCard, LogOut, Users, Zap } from "lucide-react";
+import { Bell, Blocks, CalendarClock, CreditCard, LogOut, Sparkles, Users, Zap } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { signOut } from "@/features/auth/actions";
@@ -141,6 +141,17 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           <span className="flex-1">
             Notification settings
             <span className="block text-sm font-normal text-muted-foreground">Choose what you hear about, and turn on push</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/ai`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            AI helper
+            <span className="block text-sm font-normal text-muted-foreground">Ask questions and read receipts. Off until you switch it on</span>
           </span>
         </Link>
 
