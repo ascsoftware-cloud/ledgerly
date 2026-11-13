@@ -11,22 +11,20 @@ test.afterAll(async () => {
   if (hasAdminKey) await cleanUp(created);
 });
 
-test("the AI helper is off until switched on, then answers, counts usage and reads a receipt", async ({ page }) => {
+test("Miko is on from the start, answers, counts usage, reads a receipt, and can be switched off and on", async ({ page }) => {
   const owner = await signIn(page, testEmail("ai"), "/welcome", "Ayo Assist");
   created.push(owner);
   await expect(page).toHaveURL(/\/ayo-[0-9a-f]{4}$/, { timeout: 15_000 });
   const home = new URL(page.url()).pathname;
 
-  // Off by default: no Ask button, and the expense form offers no scan.
-  await expect(page.getByRole("button", { name: "Ask Miko" })).toHaveCount(0);
-  await page.goto(`${home}/money/expenses/new`);
-  await expect(page.getByRole("button", { name: /Fill in from the photo/ })).toHaveCount(0);
-
+  // On by default: Miko's button is there from the start, and the More page has no AI card.
+  await expect(page.getByRole("button", { name: "Ask Miko" })).toBeVisible();
+  await page.goto(`${home}/more`);
+  await expect(page.getByRole("link", { name: /Miko is switched off|AI helper/ })).toHaveCount(0);
   await page.goto(`${home}/settings/ai`);
-  await expect(page.getByRole("heading", { level: 1, name: "AI helper" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Miko, your AI helper" })).toBeVisible();
   await expect(page.getByLabel("Usage this month")).toContainText("0 of 20");
-  await page.getByRole("checkbox", { name: "Use the AI helper in this business" }).check();
-  await expect(page.getByText("AI helper switched on")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Use Miko, the AI helper, in this business" })).toBeChecked();
 
   // Ask a question: the answer comes through a tool call, and the allowance goes down.
   await page.reload();
@@ -55,10 +53,16 @@ test("the AI helper is off until switched on, then answers, counts usage and rea
   await expect(page.getByLabel("Amount (R)")).toHaveValue("345,50");
   await expect(page.getByLabel(/^Supplier/)).toHaveValue("Mock Hardware");
 
-  // Switched off again: the button goes away.
+  // An owner can switch Miko off: the button goes, the More page offers a way back, and switching on restores it.
   await page.goto(`${home}/settings/ai`);
-  await page.getByRole("checkbox", { name: "Use the AI helper in this business" }).uncheck();
-  await expect(page.getByText("AI helper switched off")).toBeVisible();
+  await page.getByRole("checkbox", { name: "Use Miko, the AI helper, in this business" }).uncheck();
+  await expect(page.getByText("Miko switched off")).toBeVisible();
   await page.reload();
   await expect(page.getByRole("button", { name: "Ask Miko" })).toHaveCount(0);
+  await page.goto(`${home}/more`);
+  await page.getByRole("link", { name: /^Miko is switched off/ }).click();
+  await page.getByRole("checkbox", { name: "Use Miko, the AI helper, in this business" }).check();
+  await expect(page.getByText("Miko switched on")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Ask Miko" })).toBeVisible();
 });

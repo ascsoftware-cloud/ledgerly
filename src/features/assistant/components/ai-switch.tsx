@@ -25,13 +25,13 @@ export function AiSwitch({ slug, enabled: initial, disabled }: { slug: string; e
               setEnabled(!next);
               return void toast.error("Couldn't change that.");
             }
-            toast.success(next ? "AI helper switched on" : "AI helper switched off");
+            toast.success(next ? "Miko switched on" : "Miko switched off");
             router.refresh();
           });
         }}
         className="mt-0.5 size-5 accent-primary"
       />
-      <span>Use the AI helper in this business</span>
+      <span>Use Miko, the AI helper, in this business</span>
     </label>
   );
 }

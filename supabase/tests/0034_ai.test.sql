@@ -34,7 +34,8 @@ begin
 
   -- off by default; only owners and admins switch it on
   select ai_enabled::text into t from public.workspace_settings where workspace_id = ws;
-  r := r || (case when t = 'false' then 'PASS' else 'FAIL' end || ' AI is off until someone switches it on');
+  r := r || (case when t = 'true' then 'PASS' else 'FAIL' end || ' AI is on for a new business (0041)');
+  update public.workspace_settings set ai_enabled = false where workspace_id in (ws, ws2);
   begin
     perform public.ai_take(ws, sam, 'chat');
     r := r || 'FAIL a request was allowed while AI was off'::text;
