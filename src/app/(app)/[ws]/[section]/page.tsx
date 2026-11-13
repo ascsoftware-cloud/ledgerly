@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Blocks, CalendarClock, CreditCard, LogOut, Users } from "lucide-react";
+import { Bell, Blocks, CalendarClock, CreditCard, LogOut, Users, Zap } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { signOut } from "@/features/auth/actions";
@@ -121,6 +121,28 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             </span>
           </Link>
         )}
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/automations`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Zap className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Automations
+            <span className="block text-sm font-normal text-muted-foreground">Chase invoices and get alerts by themselves</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/notifications`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Bell className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Notification settings
+            <span className="block text-sm font-normal text-muted-foreground">Choose what you hear about, and turn on push</span>
+          </span>
+        </Link>
 
         <NavTabs slug={ctx.workspace.slug} tabs={tabs} canChange={ctx.role === "owner" || ctx.role === "admin"} />
 
