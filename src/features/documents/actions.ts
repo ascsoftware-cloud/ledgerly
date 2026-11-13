@@ -6,6 +6,7 @@ import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { todaySAST } from "@/lib/dates";
 import { createServerClient } from "@/lib/supabase/server";
+import { hasStorageRoom, STORAGE_FULL } from "@/lib/storage-room";
 import { requireWorkspace, type WorkspaceContext } from "@/lib/workspace";
 import { runOutbox } from "@/server/jobs/run-outbox";
 import { businessName, getContactForContract, getTemplate } from "./queries";
@@ -62,6 +63,11 @@ export async function recordFile(slug: string, input: { path: string; name: stri
   const supabase = await createServerClient();
   const { error: missing } = await supabase.storage.from("documents").createSignedUrl(input.path, 5);
   if (missing) return { ok: false, message: "The upload didn't work. Try again." };
+  // The browser has already uploaded it, so it is counted: over the cap means take it back out.
+  if (!(await hasStorageRoom(supabase, ctx.workspace.id, 0))) {
+    await supabase.storage.from("documents").remove([input.path]);
+    return { ok: false, message: STORAGE_FULL };
+  }
   const { error } = await supabase.from("files").insert({
     workspace_id: ctx.workspace.id,
     folder_id: input.folderId,
@@ -227,7 +233,7 @@ async function portalAction(slug: string, contactId: string, fn: "create_portal_
   if (!canWrite(ctx)) return { ok: false, message: NO_WRITE };
   const supabase = await createServerClient();
   const { data, error } = await supabase.rpc(fn, { p_contact: contactId });
-  if (error) return { ok: false, message: "Couldn't do that. Try again." };
+  if (error) return { ok: false, message: error.code === "LDG01" && error.message ? error.message : "Couldn't do that. Try again." };
   revalidatePath(`/${slug}/clients/${contactId}`);
   return { ok: true, link: typeof data === "string" ? portalUrl(data) : null };
 }

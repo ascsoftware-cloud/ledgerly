@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
+import { recordConsent } from "@/features/privacy/consent";
 import { requireWorkspace } from "@/lib/workspace";
 import { prefsSchema, pushSubscriptionSchema, type PushSubscriptionInput } from "./schema";
 
@@ -37,7 +38,7 @@ export async function setPref(slug: string, kind: string, enabled: boolean, push
 export async function savePushSubscription(slug: string, sub: PushSubscriptionInput, userAgent: string): Promise<{ ok: boolean }> {
   const parsed = pushSubscriptionSchema.safeParse(sub);
   if (!parsed.success) return { ok: false };
-  await requireWorkspace(slug);
+  const ctx = await requireWorkspace(slug);
   const supabase = await createServerClient();
   // A device belongs to whoever subscribes on it: the database moves the row if someone else had it.
   const { error } = await supabase.rpc("save_push_subscription", {
@@ -46,6 +47,7 @@ export async function savePushSubscription(slug: string, sub: PushSubscriptionIn
     p_auth: parsed.data.keys.auth,
     p_user_agent: userAgent.slice(0, 300),
   });
+  if (!error) await recordConsent(supabase, { userId: ctx.user.id, workspaceId: null, kind: "push", granted: true });
   return { ok: !error };
 }
 
@@ -54,6 +56,7 @@ export async function removePushSubscription(slug: string, endpoint: string): Pr
   const ctx = await requireWorkspace(slug);
   const supabase = await createServerClient();
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", ctx.user.id);
+  if (!error) await recordConsent(supabase, { userId: ctx.user.id, workspaceId: null, kind: "push", granted: false });
   return { ok: !error };
 }
 

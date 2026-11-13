@@ -12,6 +12,8 @@ test("make a rule in plain words, see what it did, switch it off and delete it",
   const owner = await signIn(page, testEmail("auto"), "/welcome", "Alma Auto");
   created.push(owner);
   await expect(page).toHaveURL(/\/alma-[0-9a-f]{4}$/, { timeout: 15_000 });
+  // The portal and automations are Pro features (0038): this business is upgraded the way billing would.
+  await admin().from("workspaces").update({ plan: "pro" }).eq("created_by", owner);
   const home = new URL(page.url()).pathname;
 
   await page.goto(`${home}/more`);

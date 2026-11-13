@@ -51,8 +51,8 @@ declare
   passed int; failed int;
 begin
   insert into auth.users (id, email) values (olga, 'olga@auto.test'), (adam, 'adam@auto.test'), (sam, 'sam@auto.test'), (acc, 'acc@auto.test'), (eve, 'eve@auto.test');
-  insert into public.workspaces (slug, name, created_by) values ('auto-test-a', 'A', olga) returning id into ws;
-  insert into public.workspaces (slug, name, created_by) values ('auto-test-b', 'B', eve) returning id into ws2;
+  insert into public.workspaces (slug, name, created_by, plan) values ('auto-test-a', 'A', olga, 'pro') returning id into ws;
+  insert into public.workspaces (slug, name, created_by, plan) values ('auto-test-b', 'B', eve, 'pro') returning id into ws2;
   insert into public.memberships (workspace_id, user_id, role) values (ws, olga, 'owner'), (ws, adam, 'admin'), (ws, sam, 'staff'), (ws, acc, 'accountant'), (ws2, eve, 'owner');
   insert into public.workspace_settings (workspace_id) values (ws), (ws2);
   insert into public.contacts (workspace_id, name, email) values (ws, 'Thandi', 'thandi@client.test') returning id into c;

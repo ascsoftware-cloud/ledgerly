@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { parseReceipt } from "@/lib/ai/receipt";
 import { rateLimit } from "@/lib/rate-limit";
 import { createServerClient } from "@/lib/supabase/server";
+import { recordConsent } from "@/features/privacy/consent";
 import { requireWorkspace } from "@/lib/workspace";
 import { getProvider } from "@/server/ai/provider";
 import { giveBackAi, takeAi } from "@/server/ai/allowance";
@@ -60,6 +61,7 @@ export async function setAiEnabled(slug: string, on: boolean): Promise<{ ok: boo
   if (ctx.role !== "owner" && ctx.role !== "admin") return { ok: false };
   const supabase = await createServerClient();
   const { data } = await supabase.from("workspace_settings").update({ ai_enabled: on === true }).eq("workspace_id", ctx.workspace.id).select("workspace_id");
+  if (data?.length) await recordConsent(supabase, { userId: ctx.user.id, workspaceId: ctx.workspace.id, kind: "ai_provider", granted: on === true });
   revalidatePath(`/${slug}`, "layout");
   return { ok: !!data?.length };
 }

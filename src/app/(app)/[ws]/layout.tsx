@@ -3,6 +3,8 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { AppShell } from "@/components/shell/app-shell";
 import { AssistantPanel } from "@/features/assistant/components/assistant-panel";
 import { getAiStatus } from "@/features/assistant/queries";
+import { DeletionBanner } from "@/features/privacy/components/deletion-banner";
+import { getDeletionState } from "@/features/privacy/queries";
 import { WorkspaceTheme } from "@/features/dashboard/components/workspace-theme";
 import { getEnabledNav } from "@/features/dashboard/nav";
 import { CommandCenter } from "@/features/search/components/command-center";
@@ -35,7 +37,7 @@ async function WorkspaceFrame({
 }) {
   const { ws } = await params;
   const ctx = await requireWorkspace(ws);
-  const [tabs, unread, ai] = await Promise.all([getNavTabs(ctx.workspace.id), unreadCount(ctx), getAiStatus(ctx.workspace.id)]);
+  const [tabs, unread, ai, deletion] = await Promise.all([getNavTabs(ctx.workspace.id), unreadCount(ctx), getAiStatus(ctx.workspace.id), getDeletionState(ctx)]);
   const shown = Object.fromEntries(tabs.map((t) => [t.tab, t.shown]));
   const nav = getEnabledNav(ctx.workspace.slug, ctx.modules, shown, ctx.role);
   return (
@@ -65,6 +67,7 @@ async function WorkspaceFrame({
       }
     >
       <WorkspaceTheme accent={ctx.workspace.accent} mode={ctx.workspace.mode} />
+      <DeletionBanner slug={ctx.workspace.slug} state={deletion} isOwner={ctx.role === "owner"} />
       {children}
     </AppShell>
   );

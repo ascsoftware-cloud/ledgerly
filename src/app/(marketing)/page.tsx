@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Check, FileText, MessageCircle, Sparkles, Wallet } from "lucide-react";
+import { JsonLd } from "@/components/json-ld";
 import { buttonVariants } from "@/components/ui/button";
-import { formatMoney } from "@/lib/money";
+import { formatPrice, PLANS } from "@/lib/plans";
+import { siteUrl } from "@/lib/site-url";
 
 const BENEFITS = [
   {
@@ -30,12 +32,28 @@ const STEPS = [
 const FREE = ["10 invoices or quotes a month", "Unlimited clients and team members", "Expenses, tasks and bookings"];
 const PRO = ["Unlimited invoices and quotes", "Your own branding and client portal", "Reminders that send themselves"];
 
-/** Proposed price; owner confirms before billing is built in Phase 7. */
-const PRO_PRICE_CENTS = 19_900;
-
 export default function LandingPage() {
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            { "@type": "Organization", name: "Ledgerly", url: siteUrl() },
+            {
+              "@type": "SoftwareApplication",
+              name: "Ledgerly",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web, Android, iOS",
+              description: "Invoices, clients, expenses, tasks and bookings in one simple app, built for South African small businesses.",
+              offers: [
+                { "@type": "Offer", name: "Free", price: "0", priceCurrency: "ZAR" },
+                { "@type": "Offer", name: "Pro", price: String(PLANS.pro.priceCents / 100), priceCurrency: "ZAR" },
+              ],
+            },
+          ],
+        }}
+      />
       <section className="mx-auto w-full max-w-5xl px-4 pt-16 pb-12 text-center sm:pt-24">
         <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
           Run your whole business from one simple app
@@ -99,7 +117,7 @@ export default function LandingPage() {
           <PlanCard name="Free" price="R 0" note="for as long as you like" features={FREE} cta="Start free" />
           <PlanCard
             name="Pro"
-            price={formatMoney(PRO_PRICE_CENTS).replace(",00", "")}
+            price={formatPrice(PLANS.pro.priceCents)}
             note="per month, unlimited users"
             features={PRO}
             cta="Start free, upgrade later"

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
@@ -171,6 +172,17 @@ export function LoginForm() {
           {sending ? "Sending…" : "Email me a code"}
         </Button>
       </form>
+      <p className="text-center text-xs text-muted-foreground">
+        By continuing you agree to the{" "}
+        <Link href="/terms" className="underline underline-offset-4">
+          Terms
+        </Link>{" "}
+        and the{" "}
+        <Link href="/privacy" className="underline underline-offset-4">
+          Privacy policy
+        </Link>
+        . We use your email only to sign you in and to send what you ask for.
+      </p>
     </div>
   );
 }

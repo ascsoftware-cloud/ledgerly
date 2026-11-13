@@ -10,6 +10,7 @@ export const APP_ROUTES = new Set([
   "privacy",
   "terms",
   "popia",
+  "pricing",
   "p",
   "book",
   "invite",

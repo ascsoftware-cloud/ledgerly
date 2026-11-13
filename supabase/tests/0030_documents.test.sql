@@ -30,8 +30,8 @@ declare
   passed int; failed int;
 begin
   insert into auth.users (id, email) values (olga, 'olga@doc.test'), (sam, 'sam@doc.test'), (acc, 'acc@doc.test'), (eve, 'eve@doc.test');
-  insert into public.workspaces (slug, name, created_by) values ('doc-test-a', 'Olga Plumbing', olga) returning id into ws;
-  insert into public.workspaces (slug, name, created_by) values ('doc-test-b', 'Eve Co', eve) returning id into ws2;
+  insert into public.workspaces (slug, name, created_by, plan) values ('doc-test-a', 'Olga Plumbing', olga, 'pro') returning id into ws;
+  insert into public.workspaces (slug, name, created_by, plan) values ('doc-test-b', 'Eve Co', eve, 'pro') returning id into ws2;
   insert into public.memberships (workspace_id, user_id, role) values
     (ws, olga, 'owner'), (ws, sam, 'staff'), (ws, acc, 'accountant'), (ws2, eve, 'owner');
   insert into public.workspace_settings (workspace_id, business_name) values (ws, 'Olga Plumbing'), (ws2, 'Eve Co');

@@ -18,7 +18,8 @@ export type LimitKind =
   | "book-ip"
   | "invite-ip"
   | "portal-ip"
-  | "ai-user";
+  | "ai-user"
+  | "export-user";
 
 type RpcResult = { data: boolean | null; error: { message: string; code?: string } | null };
 type RpcCall = (args: { p_bucket: string; max_hits: number; window_seconds: number }) => Promise<RpcResult>;

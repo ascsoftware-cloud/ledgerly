@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
 import { NAV_ICONS } from "./icons";
 import { QuickAdd, type QuickAddItem } from "./quick-add";
 import { isActive, type NavItem } from "./nav";
@@ -32,6 +33,7 @@ export function Sidebar({
       className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-2 border-r bg-card p-3 transition-[width] duration-(--dur) ease-(--ease) data-[collapsed=true]:w-17 md:flex"
     >
       <div className="flex h-11 items-center justify-between gap-2 px-1">
+        {!collapsed && <LogoMark className="size-8" aria-label="Ledgerly by ASC" />}
         {!collapsed &&
           (titleHref ? (
             <Link

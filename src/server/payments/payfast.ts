@@ -32,6 +32,12 @@ export const PAYFAST_FIELD_ORDER = [
   "email_confirmation",
   "confirmation_address",
   "payment_method",
+  // Subscriptions (Ledgerly Pro): these follow payment_method in PayFast's signature order.
+  "subscription_type",
+  "billing_date",
+  "recurring_amount",
+  "frequency",
+  "cycles",
 ] as const;
 
 export const PAYFAST_HOSTS = ["www.payfast.co.za", "w1w.payfast.co.za", "w2w.payfast.co.za", "sandbox.payfast.co.za"];
@@ -69,7 +75,8 @@ export type ItnCheck = { ok: true } | { ok: false; reason: "signature" | "source
 export async function verifyPayfastItn(input: {
   body: URLSearchParams;
   passphrase: string | null;
-  expectedCents: number;
+  /** null skips the amount check (a cancellation notice carries no payment). */
+  expectedCents: number | null;
   merchantId: string;
   sourceIp: string;
   validIps: string[];
@@ -81,9 +88,11 @@ export async function verifyPayfastItn(input: {
   if (input.body.get("signature") !== expected) return { ok: false, reason: "signature" };
   if (!input.validIps.includes(input.sourceIp)) return { ok: false, reason: "source" };
   if (input.body.get("merchant_id") !== input.merchantId) return { ok: false, reason: "merchant" };
-  const gross = payfastAmountToCents(input.body.get("amount_gross"));
-  // Exact to the cent. PayFast's PHP sample allows R0.01 only because PHP uses floats.
-  if (gross === null || gross !== input.expectedCents) return { ok: false, reason: "amount" };
+  if (input.expectedCents !== null) {
+    const gross = payfastAmountToCents(input.body.get("amount_gross"));
+    // Exact to the cent. PayFast's PHP sample allows R0.01 only because PHP uses floats.
+    if (gross === null || gross !== input.expectedCents) return { ok: false, reason: "amount" };
+  }
   if (!(await input.validateWithPayfast(paramString))) return { ok: false, reason: "validate" };
   return { ok: true };
 }
