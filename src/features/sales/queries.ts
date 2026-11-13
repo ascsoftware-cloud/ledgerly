@@ -45,6 +45,7 @@ const lineRow = z.object({
   net_cents: cents,
   vat_cents: cents,
   gross_cents: cents,
+  product_id: z.uuid().nullable(),
 });
 
 const docRow = z.object({
@@ -134,7 +135,7 @@ export async function getDocument(ctx: WorkspaceContext, id: string): Promise<Fu
       .maybeSingle(),
     supabase
       .from("sales_document_lines")
-      .select("id, position, description, quantity, unit_cents, discount_pct, vat_rate, net_cents, vat_cents, gross_cents")
+      .select("id, position, description, quantity, unit_cents, discount_pct, vat_rate, net_cents, vat_cents, gross_cents, product_id")
       .eq("workspace_id", ws)
       .eq("document_id", id)
       .order("position"),

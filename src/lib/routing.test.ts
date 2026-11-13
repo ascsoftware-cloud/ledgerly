@@ -7,6 +7,8 @@ describe("classifyPath", () => {
     ["/login", "app"],
     ["/auth/confirm", "app"],
     ["/welcome", "app"],
+    ["/invite/abc_DEF-123", "app"],
+    ["/portal/abc_DEF-123", "app"],
     ["/book/thandi-1a2b", "app"],
     ["/book/thandi-1a2b/abc.ics", "app"],
     ["/thandi-1a2b", "workspace"],

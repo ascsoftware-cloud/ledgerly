@@ -1,8 +1,9 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { siteUrl } from "@/lib/site-url";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { BookingEmailInput, DocumentEmailInput } from "./email-template";
+import type { BookingEmailInput, DocumentEmailInput, InviteEmailInput, PortalEmailInput } from "./email-template";
 import { processOutbox, type OutboxRow } from "./outbox-core";
 import { logTransport, resendTransport, type Transport } from "./transport";
 
@@ -20,10 +21,17 @@ function transportFromEnv(): Transport {
 const rowSchema = z.object({
   id: z.uuid(),
   workspace_id: z.uuid(),
-  template: z.enum(["document", "reminder", "booking_confirmed", "booking_reminder"]),
+  template: z.enum(["document", "reminder", "booking_confirmed", "booking_reminder", "team_invite", "portal_link"]),
   to_address: z.string(),
   reply_to: z.string().nullable(),
-  payload: z.object({ document_id: z.uuid().optional(), booking_id: z.uuid().optional(), message: z.string().nullable().optional() }),
+  payload: z.object({
+    document_id: z.uuid().optional(),
+    booking_id: z.uuid().optional(),
+    invite_id: z.uuid().optional(),
+    token: z.string().max(100).optional(),
+    contact_id: z.uuid().optional(),
+    message: z.string().nullable().optional(),
+  }),
 });
 
 const docSchema = z.object({
@@ -46,6 +54,21 @@ const bookingSchema = z.object({
   token: z.string(),
   services: z.object({ name: z.string(), duration_min: z.coerce.number() }),
   workspaces: z.object({ name: z.string(), slug: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
+});
+
+const inviteSchema = z.object({
+  role: z.enum(["admin", "staff", "accountant"]),
+  accepted_at: z.string().nullable(),
+  expires_at: z.string(),
+  token_hash: z.string(),
+  invited_by: z.uuid().nullable(),
+  workspaces: z.object({ name: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
+});
+
+const portalContactSchema = z.object({
+  name: z.string(),
+  deleted_at: z.string().nullable(),
+  workspaces: z.object({ name: z.string(), workspace_settings: z.object({ business_name: z.string().nullable() }).nullable() }),
 });
 
 /** Sends what is due in the outbox. Runs from /api/jobs/outbox and right after an email is queued. */
@@ -99,6 +122,60 @@ export async function runOutbox(limit = 20) {
         startsAt: b.data.starts_at,
         durationMin: b.data.services.duration_min,
         icsLink: `${siteUrl()}/book/${b.data.workspaces.slug}/${b.data.token}.ics`,
+      };
+    },
+    loadInvite: async (inviteId, workspaceId, token): Promise<InviteEmailInput | "closed" | null> => {
+      const { data } = await db
+        .from("invites")
+        .select("role, accepted_at, expires_at, token_hash, invited_by, workspaces(name, workspace_settings(business_name))")
+        .eq("id", inviteId)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      const i = inviteSchema.safeParse(data);
+      if (!i.success) return null;
+      // A newer invitation (Send again) replaced this token: this email would carry a dead link.
+      if (createHash("sha256").update(token, "utf8").digest("hex") !== i.data.token_hash) return "closed";
+      if (i.data.accepted_at !== null || Date.parse(i.data.expires_at) < Date.now()) return "closed";
+      let inviterName = "";
+      if (i.data.invited_by) {
+        const { data: p } = await db.from("profiles").select("full_name").eq("id", i.data.invited_by).maybeSingle();
+        inviterName = (p?.full_name as string | null) ?? "";
+        if (!inviterName) {
+          const { data: u } = await db.auth.admin.getUserById(i.data.invited_by);
+          inviterName = u.user?.email ?? "";
+        }
+      }
+      return {
+        businessName: i.data.workspaces.workspace_settings?.business_name || i.data.workspaces.name,
+        inviterName,
+        role: i.data.role,
+        link: `${siteUrl()}/invite/${encodeURIComponent(token)}`,
+      };
+    },
+    loadPortal: async (contactId, workspaceId, message): Promise<PortalEmailInput | "closed" | null> => {
+      const { data: c } = await db
+        .from("contacts")
+        .select("name, deleted_at, workspaces(name, workspace_settings(business_name))")
+        .eq("id", contactId)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      const contact = portalContactSchema.safeParse(c);
+      if (!contact.success) return null;
+      if (contact.data.deleted_at !== null) return "closed";
+      const { data: l } = await db
+        .from("portal_links")
+        .select("token")
+        .eq("contact_id", contactId)
+        .eq("workspace_id", workspaceId)
+        .is("revoked_at", null)
+        .maybeSingle();
+      const token = (l?.token as string | undefined) ?? null;
+      if (!token) return "closed";
+      return {
+        businessName: contact.data.workspaces.workspace_settings?.business_name || contact.data.workspaces.name,
+        clientName: contact.data.name,
+        link: `${siteUrl()}/portal/${encodeURIComponent(token)}`,
+        message,
       };
     },
     send: transportFromEnv(),

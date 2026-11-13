@@ -19,9 +19,10 @@ const rawLine = z.object({
   unitPrice: z.string().optional().default(""),
   discount: z.string().optional().default(""),
   vat: z.string().optional().default("0"),
+  productId: z.string().optional().default(""),
 });
 
-export type DraftLine = { description: string } & LineInput;
+export type DraftLine = { description: string; productId?: string } & LineInput;
 
 function toLine(raw: z.infer<typeof rawLine>, ctx: z.RefinementCtx, index: number): DraftLine | null {
   const blank = !raw.description.trim() && !raw.quantity.trim() && !raw.unitPrice.trim();
@@ -42,7 +43,15 @@ function toLine(raw: z.infer<typeof rawLine>, ctx: z.RefinementCtx, index: numbe
     return fail(`Line ${index + 1}: the discount should be between 0 and 100%.`);
   }
   if (raw.vat !== "0" && raw.vat !== "15") return fail(`Line ${index + 1}: VAT is 0% or 15%.`);
-  return { description, quantity, unitCents, discountPct: Math.round(discountPct * 100) / 100, vatRate: raw.vat === "15" ? 15 : 0 };
+  if (raw.productId && !z.uuid().safeParse(raw.productId).success) return fail(`Line ${index + 1}: choose the product from the list.`);
+  return {
+    description,
+    quantity,
+    unitCents,
+    discountPct: Math.round(discountPct * 100) / 100,
+    vatRate: raw.vat === "15" ? 15 : 0,
+    productId: raw.productId || undefined,
+  };
 }
 
 /** The editor form, as typed, turned into exactly what the database stores. */

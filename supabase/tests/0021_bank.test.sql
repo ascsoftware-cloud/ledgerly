@@ -120,10 +120,8 @@ begin
   reset role;
 
   -- deleting an import keeps the payments and expenses it created
-  perform set_config('request.jwt.claims', json_build_object('sub', alice, 'role', 'authenticated')::text, true);
-  set local role authenticated;
+  -- (Since 0026 people delete an unused import through delete_bank_import; this checks the cascade rule itself.)
   delete from public.bank_imports where id = imp;
-  reset role;
   select count(*) into n from public.bank_lines where import_id = imp;
   r := r || (case when n = 0 then 'PASS' else 'FAIL' end || ' deleting an import removes its lines');
   select count(*) into n from public.payments where document_id = inv;

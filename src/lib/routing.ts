@@ -12,6 +12,8 @@ export const APP_ROUTES = new Set([
   "popia",
   "p",
   "book",
+  "invite",
+  "portal",
   "api",
   "_next",
 ]);

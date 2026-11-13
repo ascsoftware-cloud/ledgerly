@@ -10,7 +10,10 @@ import { calcTotals, formatMoney, parseAmount, type LineInput } from "@/lib/mone
 import { saveDraft, type EditorState } from "../actions";
 import { parseQuantity, type Kind } from "../schema";
 
-export type EditorLine = { key: string; description: string; quantity: string; unitPrice: string; discount: string; vat: "0" | "15" };
+export type EditorLine = { key: string; description: string; quantity: string; unitPrice: string; discount: string; vat: "0" | "15"; productId?: string };
+
+/** What the picker needs of a product (the stock feature owns the full type). */
+export type EditorProduct = { id: string; name: string; sku: string | null; priceCents: number; vatRate: 0 | 15; trackStock: boolean; stockQty: number };
 
 let nextKey = 0;
 const newLine = (vat: "0" | "15"): EditorLine => ({
@@ -41,6 +44,7 @@ export function DocumentEditor({
   kind,
   contacts,
   vatRegistered,
+  products = [],
   initial,
 }: {
   slug: string;
@@ -48,6 +52,8 @@ export function DocumentEditor({
   kind: Kind;
   contacts: { id: string; name: string }[];
   vatRegistered: boolean;
+  /** Products from the stock list; picking one fills the line and lets invoices take stock off. */
+  products?: EditorProduct[];
   initial?: {
     contactId: string;
     dueDate: string;
@@ -83,7 +89,7 @@ export function DocumentEditor({
     notes,
     depositType: kind === "credit_note" ? "none" : depositType,
     depositValue,
-    lines: lines.map((l) => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, discount: l.discount, vat: l.vat })),
+    lines: lines.map((l) => ({ description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, discount: l.discount, vat: l.vat, productId: l.productId ?? "" })),
   });
 
   const set = (key: string, patch: Partial<EditorLine>) =>
@@ -155,6 +161,34 @@ export function DocumentEditor({
         <ol className="space-y-3">
           {lines.map((l, i) => (
             <li key={l.key} className="grid grid-cols-6 gap-2 rounded-2xl border bg-card p-3 sm:grid-cols-[3fr_1fr_1.4fr_1fr_auto_auto] sm:items-end">
+              {products.length > 0 && kind !== "credit_note" && (
+                <label className="col-span-6 space-y-1 text-xs font-medium text-muted-foreground sm:col-span-full">
+                  Product <span className="font-normal">(optional)</span>
+                  <select
+                    value={l.productId ?? ""}
+                    onChange={(e) => {
+                      const p = products.find((x) => x.id === e.target.value);
+                      if (!p) return set(l.key, { productId: "" });
+                      set(l.key, {
+                        productId: p.id,
+                        description: p.name,
+                        unitPrice: (p.priceCents / 100).toFixed(2).replace(".", ","),
+                        vat: vatRegistered ? String(p.vatRate) as "0" | "15" : "0",
+                      });
+                    }}
+                    aria-label={`Line ${i + 1} product`}
+                    className="h-11 w-full rounded-lg border bg-background px-2 text-base text-foreground"
+                  >
+                    <option value="">Not from my stock list</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                        {p.trackStock ? ` (${p.stockQty} in stock)` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="col-span-6 space-y-1 text-xs font-medium text-muted-foreground sm:col-span-1">
                 Description
                 <Input

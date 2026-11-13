@@ -53,6 +53,7 @@ export async function saveDraft(slug: string, docId: string | null, _prev: Edito
       unit_cents: l.unitCents,
       discount_pct: l.discountPct,
       vat_rate: l.vatRate,
+      product_id: l.productId ?? null,
     })),
   });
   if (error || typeof id !== "string") {
@@ -74,7 +75,7 @@ export async function saveDraft(slug: string, docId: string | null, _prev: Edito
   redirect(`/${slug}/money/${id}`);
 }
 
-export type ActionResult = { ok: true; number?: string } | { ok: false; message: string };
+export type ActionResult = { ok: true; number?: string; warning?: string } | { ok: false; message: string };
 
 export async function sendDocument(slug: string, id: string): Promise<ActionResult> {
   if (!z.uuid().safeParse(id).success) return { ok: false, message: "That document doesn't exist." };
@@ -85,7 +86,11 @@ export async function sendDocument(slug: string, id: string): Promise<ActionResu
   if (error) return { ok: false, message: sendErrorMessage(error) };
   revalidatePath(`/${slug}/money`);
   revalidatePath(`/${slug}/money/${id}`);
-  return { ok: true, number: (data as { number?: string } | null)?.number };
+  // Selling is never blocked by stock, but say so when a sale took a product below zero.
+  const { data: low } = await supabase.rpc("stock_warnings", { p_doc: id });
+  const names = Array.isArray(low) ? (low as { name?: string }[]).flatMap((x) => (typeof x.name === "string" ? [x.name] : [])) : [];
+  const warning = names.length ? `Stock is now below zero for ${names.slice(0, 3).join(", ")}${names.length > 3 ? " and more" : ""}. Check your stock count.` : undefined;
+  return { ok: true, number: (data as { number?: string } | null)?.number, warning };
 }
 
 export async function deleteDraft(slug: string, id: string): Promise<ActionResult> {
