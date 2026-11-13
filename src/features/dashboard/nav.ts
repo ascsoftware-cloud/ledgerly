@@ -16,6 +16,8 @@ export function getEnabledNav(slug: string, modules: readonly string[], extra: E
     // Reports are for owners, admins and accountants (spec section 3).
     (role === "owner" || role === "admin" || role === "accountant") &&
       on("invoices", "expenses", "reports") && { key: "reports", label: "Reports", href: `${base}/reports`, icon: "chart" },
+    // Documents and contracts are for the whole team (the accountant reads, staff write).
+    role !== undefined && on("invoices", "clients", "documents") && { key: "docs", label: "Docs", href: `${base}/docs`, icon: "folder" },
     !!extra.accounting && { key: "accounting", label: "Accounting", href: `${base}/accounting`, icon: "calculator" },
     !!extra.courier && { key: "courier", label: "Courier", href: `${base}/courier`, icon: "truck" },
     !!extra.shopify && { key: "shopify", label: "Shopify", href: `${base}/shop`, icon: "shopping-bag" },

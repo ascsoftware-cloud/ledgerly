@@ -22,10 +22,10 @@ describe("getEnabledNav", () => {
     expect(labels).toEqual(["Home", "Money", "Clients", "Work", "Stock", "More"]);
   });
 
-  test("Reports show for owners, admins and accountants only", () => {
+  test("Reports show for owners, admins and accountants only; Docs for everyone signed in", () => {
     const labels = (role: "owner" | "admin" | "staff" | "accountant") => getEnabledNav("x-1a2b", ["invoices", "clients"], {}, role).map((i) => i.label);
-    for (const role of ["owner", "admin", "accountant"] as const) expect(labels(role)).toEqual(["Home", "Money", "Clients", "Reports", "More"]);
-    expect(labels("staff")).toEqual(["Home", "Money", "Clients", "More"]);
+    for (const role of ["owner", "admin", "accountant"] as const) expect(labels(role)).toEqual(["Home", "Money", "Clients", "Reports", "Docs", "More"]);
+    expect(labels("staff")).toEqual(["Home", "Money", "Clients", "Docs", "More"]);
   });
 
   test("expenses alone still show Money", () => {

@@ -5,16 +5,18 @@ import {
   buildInviteEmail,
   type DocumentEmailInput,
   type InviteEmailInput,
+  type PortalEmailInput,
+  buildPortalEmail,
 } from "./email-template";
 import type { Transport } from "./transport";
 
 export type OutboxRow = {
   id: string;
   workspace_id: string;
-  template: "document" | "reminder" | "booking_confirmed" | "booking_reminder" | "team_invite";
+  template: "document" | "reminder" | "booking_confirmed" | "booking_reminder" | "team_invite" | "portal_link";
   to_address: string;
   reply_to: string | null;
-  payload: { document_id?: string; booking_id?: string; invite_id?: string; token?: string; message?: string | null };
+  payload: { document_id?: string; booking_id?: string; invite_id?: string; token?: string; contact_id?: string; message?: string | null };
 };
 
 /**
@@ -29,6 +31,8 @@ export async function processOutbox(deps: {
   loadBooking?: (bookingId: string, workspaceId: string) => Promise<BookingEmailInput | "cancelled" | null>;
   /** Same rule: only an invitation from `workspaceId`. "closed" (accepted or expired) drops the message. The token is in the outbox row. */
   loadInvite?: (inviteId: string, workspaceId: string, token: string) => Promise<InviteEmailInput | "closed" | null>;
+  /** Same rule: only a client from `workspaceId`. "closed" (link revoked or client gone) drops the message. */
+  loadPortal?: (contactId: string, workspaceId: string, message: string | null) => Promise<PortalEmailInput | "closed" | null>;
   send: Transport;
   finish: (id: string, ok: boolean, providerId: string | null, error: string | null) => Promise<void>;
 }): Promise<{ sent: number; failed: number }> {
@@ -68,6 +72,25 @@ export async function processOutbox(deps: {
         continue;
       }
       const email = buildInviteEmail(inv);
+      const result = await deps.send({ to: row.to_address, replyTo: row.reply_to, ...email, idempotencyKey: row.id });
+      await deps.finish(row.id, result.ok, result.ok ? result.id : null, result.ok ? null : result.error);
+      if (result.ok) sent++;
+      else failed++;
+      continue;
+    }
+    if (row.template === "portal_link") {
+      const contactId = row.payload.contact_id;
+      const p = contactId && deps.loadPortal ? await deps.loadPortal(contactId, row.workspace_id, row.payload.message ?? null) : null;
+      if (p === "closed") {
+        await deps.finish(row.id, true, null, "skipped: portal link no longer active");
+        continue;
+      }
+      if (!p) {
+        await deps.finish(row.id, false, null, "Client not found");
+        failed++;
+        continue;
+      }
+      const email = buildPortalEmail(p);
       const result = await deps.send({ to: row.to_address, replyTo: row.reply_to, ...email, idempotencyKey: row.id });
       await deps.finish(row.id, result.ok, result.ok ? result.id : null, result.ok ? null : result.error);
       if (result.ok) sent++;

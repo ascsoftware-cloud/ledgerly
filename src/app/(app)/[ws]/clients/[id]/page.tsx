@@ -8,6 +8,9 @@ import { PageSkeleton } from "@/components/states/page-skeleton";
 import { ArchiveButton } from "@/features/clients/components/archive-button";
 import { NoteForm } from "@/features/clients/components/note-form";
 import { getContact } from "@/features/clients/queries";
+import { PortalPanel } from "@/features/documents/components/portal-panel";
+import { getPortalToken } from "@/features/documents/queries";
+import { siteUrl } from "@/lib/site-url";
 import { formatDate, todaySAST } from "@/lib/dates";
 import { whatsappNumber } from "@/lib/phone";
 import { requireWorkspace } from "@/lib/workspace";
@@ -30,6 +33,8 @@ async function Client({ params }: { params: PageProps<"/[ws]/clients/[id]">["par
   const c = await getContact(ctx, id);
   if (!c) notFound();
   const canWrite = ctx.role !== "accountant";
+  // The portal link is a secret: only people who can share it (not the read-only accountant) see it.
+  const portalToken = canWrite && !c.deletedAt ? await getPortalToken(ctx, c.id) : null;
 
   return (
     <div className="space-y-6">
@@ -93,6 +98,10 @@ async function Client({ params }: { params: PageProps<"/[ws]/clients/[id]">["par
           <p className="text-muted-foreground">No contact details yet.</p>
         )}
       </section>
+
+      {canWrite && !c.deletedAt && (
+        <PortalPanel slug={ws} contactId={c.id} link={portalToken ? `${siteUrl()}/portal/${portalToken}` : null} hasEmail={Boolean(c.email)} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="notes-heading" className="space-y-3">

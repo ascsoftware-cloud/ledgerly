@@ -1,5 +1,5 @@
 /** Icon names rather than components, so nav lists can be built on the server. */
-export type IconName = "home" | "wallet" | "users" | "briefcase" | "package" | "chart" | "calculator" | "truck" | "shopping-bag" | "menu";
+export type IconName = "home" | "wallet" | "users" | "briefcase" | "package" | "chart" | "folder" | "calculator" | "truck" | "shopping-bag" | "menu";
 
 export type NavItem = {
   key: string;
