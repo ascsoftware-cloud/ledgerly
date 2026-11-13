@@ -5,7 +5,7 @@ import type { AiProvider } from "@/lib/ai/types";
 
 // Groq model names change; these are starting points, not verified without a key. Override with AI_MODEL / AI_VISION_MODEL.
 const DEFAULT_MODEL = "llama-3.3-70b-versatile";
-const DEFAULT_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+const DEFAULT_VISION_MODEL = "qwen/qwen3.8-27b";
 
 /** null when no provider is configured: the app then says the helper is not set up instead of failing. */
 export function getProvider(): AiProvider | null {
