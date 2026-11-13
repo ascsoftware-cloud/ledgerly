@@ -88,7 +88,8 @@ export function guessBankMapping(headers: string[]): BankMapping {
   if (debit === null || credit === null) {
     for (const i of [debit, credit]) if (i !== null) taken.delete(i);
     debit = credit = null;
-    amount = pick((h) => has(h, AMOUNT));
+    // "Value Date" contains "value" but is a date: dates never count as the amount.
+    amount = pick((h) => has(h, AMOUNT) && !has(h, DATE));
   }
   const description = headers.flatMap((h, i) => (!taken.has(i) && has(h ?? "", TEXT) ? [i] : []));
   return { date, amount, debit, credit, description };

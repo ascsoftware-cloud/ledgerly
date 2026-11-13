@@ -138,15 +138,15 @@ export async function saveProject(slug: string, projectId: string | null, _prev:
   return { status: "saved", id: data.id as string, message: projectId ? "Project updated." : "Project created." };
 }
 
-/** Owners and admins archive projects (their tasks stay, hidden with the project). */
-export async function archiveProject(slug: string, projectId: string): Promise<{ ok: boolean }> {
+/** Owners and admins archive or restore projects (tasks and time stay, hidden with the project). */
+export async function setProjectArchived(slug: string, projectId: string, archived: boolean): Promise<{ ok: boolean }> {
   if (!z.uuid().safeParse(projectId).success) return { ok: false };
   const ctx = await requireWorkspace(slug);
   if (ctx.role !== "owner" && ctx.role !== "admin") return { ok: false };
   const supabase = await createServerClient();
   const { data } = await supabase
     .from("projects")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: archived ? new Date().toISOString() : null })
     .eq("id", projectId)
     .eq("workspace_id", ctx.workspace.id)
     .select("id")

@@ -91,3 +91,15 @@ export async function listClientsForPicker(ctx: WorkspaceContext): Promise<{ id:
   const { data } = await supabase.from("contacts").select("id, name").eq("workspace_id", ctx.workspace.id).is("deleted_at", null).order("name").limit(500);
   return z.array(z.object({ id: z.uuid(), name: z.string() })).catch([]).parse(data ?? []);
 }
+
+export async function listArchivedProjects(ctx: WorkspaceContext): Promise<{ id: string; name: string }[]> {
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("workspace_id", ctx.workspace.id)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false })
+    .limit(50);
+  return z.array(z.object({ id: z.uuid(), name: z.string() })).catch([]).parse(data ?? []);
+}

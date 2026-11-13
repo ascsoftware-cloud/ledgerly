@@ -6,9 +6,10 @@ import { Landmark } from "lucide-react";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { BankImport } from "@/features/bank/components/bank-import";
-import { BankLineItem } from "@/features/bank/components/bank-line";
+import { BankLineItem, DeleteImport } from "@/features/bank/components/bank-line";
 import { suggestMatch } from "@/features/bank/parse";
-import { listBankLines, openInvoices } from "@/features/bank/queries";
+import { listBankLines, listImports, openInvoices } from "@/features/bank/queries";
+import { formatDate } from "@/lib/dates";
 import { MoneySections } from "@/features/expenses/components/money-sections";
 import { listCategories } from "@/features/expenses/queries";
 import { requireWorkspace } from "@/lib/workspace";
@@ -37,7 +38,7 @@ async function Bank({
   if (ctx.role === "staff") notFound();
   const canWrite = ctx.role === "owner" || ctx.role === "admin";
   const view = sp.view === "all" ? "all" : "todo";
-  const [lines, invoices, categories] = await Promise.all([listBankLines(ctx, view), openInvoices(ctx), listCategories(ctx)]);
+  const [lines, invoices, categories, imports] = await Promise.all([listBankLines(ctx, view), openInvoices(ctx), listCategories(ctx), listImports(ctx)]);
 
   const tab = (key: "todo" | "all", label: string) => (
     <Link
@@ -85,6 +86,21 @@ async function Bank({
             />
           ))}
         </ul>
+      )}
+      {canWrite && imports.length > 0 && (
+        <details className="rounded-2xl border bg-card p-4">
+          <summary className="cursor-pointer font-medium">Recent imports</summary>
+          <ul className="mt-2 divide-y text-sm" aria-label="Recent imports">
+            {imports.map((i) => (
+              <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
+                <span>
+                  {i.file_name} · {formatDate(i.created_at.slice(0, 10))} · {i.added_count} line{i.added_count === 1 ? "" : "s"}
+                </span>
+                <DeleteImport slug={ws} id={i.id} name={i.file_name} />
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

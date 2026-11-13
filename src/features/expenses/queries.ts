@@ -79,3 +79,10 @@ export async function listRecurring(ctx: WorkspaceContext): Promise<RecurringRow
     .order("next_date");
   return z.array(recurringRow).catch([]).parse(data ?? []);
 }
+
+/** Whether the business is registered for VAT: only then is input VAT claimable. */
+export async function isVatRegistered(ctx: WorkspaceContext): Promise<boolean> {
+  const supabase = await createServerClient();
+  const { data } = await supabase.from("workspace_settings").select("vat_registered").eq("workspace_id", ctx.workspace.id).maybeSingle();
+  return data?.vat_registered === true;
+}

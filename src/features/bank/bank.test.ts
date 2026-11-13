@@ -176,3 +176,15 @@ describe("reading a semicolon statement with a title line", () => {
     expect([headers, ...rows]).toEqual([["Statement for account 123"], ["Date", "Description", "Amount"], ["01/11/2026", "Fees", "-65,00"]]);
   });
 });
+
+describe("review fixes", () => {
+  test("a 'Value Date' column is a date, never the amount", () => {
+    expect(guessBankMapping(["Transaction Date", "Value Date", "Description", "Amount", "Balance"])).toEqual({
+      date: 0,
+      amount: 3,
+      debit: null,
+      credit: null,
+      description: [2],
+    });
+  });
+});

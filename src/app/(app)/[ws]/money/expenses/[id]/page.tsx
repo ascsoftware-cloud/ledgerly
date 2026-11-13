@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { ExpenseForm } from "@/features/expenses/components/expense-form";
 import { ArchiveExpense, ViewReceipt } from "@/features/expenses/components/expense-tools";
-import { getExpense, listCategories } from "@/features/expenses/queries";
+import { getExpense, isVatRegistered, listCategories } from "@/features/expenses/queries";
 import { EXPENSE_METHODS, type ExpenseMethod } from "@/features/expenses/schema";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -57,6 +57,7 @@ async function Expense({ params }: { params: PageProps<"/[ws]/money/expenses/[id
           slug={ws}
           expenseId={e.id}
           categories={await listCategories(ctx)}
+          vatRegistered={await isVatRegistered(ctx)}
           initial={{
             amount: rand(e.amount_cents),
             spentOn: dmy(e.spent_on),

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
-import { ignoreLine, lineToExpense, matchLine } from "../actions";
+import { deleteImport, ignoreLine, lineToExpense, matchLine, resetLine } from "../actions";
 
 type Line = {
   id: string;
@@ -61,6 +61,11 @@ export function BankLineItem({
           {line.status === "matched" && `Paid ${line.number ?? "an invoice"}`}
           {line.status === "expense" && "Logged as an expense"}
           {line.status === "ignored" && "Ignored"}
+          {(line.status === "matched" || line.status === "expense") && canWrite && (
+            <Button type="button" variant="ghost" size="touch" disabled={pending} onClick={() => run(() => resetLine(slug, line.id), "Back on the to-do list")}>
+              Undo
+            </Button>
+          )}
           {line.status === "ignored" && canWrite && (
             <Button type="button" variant="ghost" size="touch" disabled={pending} onClick={() => run(() => ignoreLine(slug, line.id, false), "Back on the to-do list")}>
               Undo
@@ -109,5 +114,42 @@ export function BankLineItem({
         </span>
       ) : null}
     </li>
+  );
+}
+
+/** Deletes a statement import that nothing has been matched or logged from yet. */
+export function DeleteImport({ slug, id, name }: { slug: string; id: string; name: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [pending, start] = useTransition();
+  if (!confirming)
+    return (
+      <Button type="button" variant="ghost" size="touch" aria-label={`Delete ${name}`} onClick={() => setConfirming(true)}>
+        Delete
+      </Button>
+    );
+  return (
+    <span className="flex gap-1">
+      <Button
+        type="button"
+        variant="destructive"
+        size="touch"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const r = await deleteImport(slug, id);
+            setConfirming(false);
+            if (!r.ok) return void toast.error(r.message ?? "Couldn't delete that import.");
+            toast.success("Import deleted");
+            router.refresh();
+          })
+        }
+      >
+        Yes, delete it
+      </Button>
+      <Button type="button" variant="ghost" size="touch" onClick={() => setConfirming(false)}>
+        Keep
+      </Button>
+    </span>
   );
 }

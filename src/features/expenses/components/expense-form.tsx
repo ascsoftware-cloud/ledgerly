@@ -24,7 +24,7 @@ const EMPTY: ExpenseInitial = {
   spentOn: "",
   supplier: "",
   categoryId: "",
-  includesVat: true,
+  includesVat: false,
   method: "card",
   description: "",
   hasReceipt: false,
@@ -35,8 +35,9 @@ export function ExpenseForm({
   slug,
   expenseId = null,
   categories,
-  initial = EMPTY,
+  initial,
   canRepeat = false,
+  vatRegistered = false,
 }: {
   slug: string;
   expenseId?: string | null;
@@ -44,10 +45,13 @@ export function ExpenseForm({
   initial?: ExpenseInitial;
   /** Owners and admins can make a new expense repeat. */
   canRepeat?: boolean;
+  /** Only VAT-registered businesses can claim input VAT, so only they see the VAT toggle. */
+  vatRegistered?: boolean;
 }) {
   const router = useRouter();
   const [requestId] = useState(() => crypto.randomUUID());
-  const [v, setV] = useState(initial);
+  const [v, setV] = useState<ExpenseInitial>(initial ?? { ...EMPTY, includesVat: vatRegistered });
+  const showVat = vatRegistered || v.includesVat;
   const [repeat, setRepeat] = useState("");
   const set = (k: keyof ExpenseInitial) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setV({ ...v, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
@@ -80,10 +84,12 @@ export function ExpenseForm({
           ))}
         </select>
       </label>
-      <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2">
-        <input type="checkbox" name="includesVat" checked={v.includesVat} onChange={set("includesVat")} className="size-5 accent-primary" />
-        The amount includes 15% VAT I can claim back
-      </label>
+      {showVat && (
+        <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2">
+          <input type="checkbox" name="includesVat" checked={v.includesVat} onChange={set("includesVat")} className="size-5 accent-primary" />
+          The amount includes 15% VAT I can claim back
+        </label>
+      )}
       <label className="space-y-1 text-sm font-medium">
         Supplier <span className="font-normal text-muted-foreground">(optional)</span>
         <Input name="supplier" value={v.supplier} onChange={set("supplier")} placeholder="Engen, Makro, landlord…" className="h-12 text-base" />

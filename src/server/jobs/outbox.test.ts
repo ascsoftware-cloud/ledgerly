@@ -197,3 +197,25 @@ describe("booking emails", () => {
     expect(finished).toEqual([["r", true, null, "skipped: booking cancelled"]]);
   });
 });
+
+describe("booking email greeting (the name is typed by a stranger)", () => {
+  const b = (customerName: string) => ({
+    businessName: "Thandi's Salon",
+    customerName,
+    serviceName: "Cut",
+    startsAt: "2026-11-20T08:00:00.000Z",
+    durationMin: 45,
+    icsLink: "https://business.ascsoftware.co.za/book/x/abc.ics",
+  });
+  test("a normal first name is used", () => {
+    expect(buildBookingEmail(b("Lerato Dube"), "confirmed").text).toContain("Hi Lerato,");
+  });
+  test("a link or odd text in the name is never placed in the greeting", () => {
+    for (const name of ["www.evil.example/claim now", "http://evil.test win", "<b>Prize</b> claim", "$$$ WIN"]) {
+      const e = buildBookingEmail(b(name), "confirmed");
+      expect(e.text).toContain("Hi there,");
+      expect(e.text).not.toMatch(/evil|WIN|Prize/);
+      expect(e.html).not.toMatch(/evil|WIN|Prize/);
+    }
+  });
+});

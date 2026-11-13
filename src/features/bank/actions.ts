@@ -83,3 +83,25 @@ export async function ignoreLine(slug: string, lineId: string, ignored: boolean)
   done(slug);
   return { ok: true };
 }
+
+/** Back to the to-do list, once the payment was removed or the expense archived. */
+export async function resetLine(slug: string, lineId: string): Promise<Result> {
+  if (!z.uuid().safeParse(lineId).success) return { ok: false };
+  if (!(await managers(slug))) return { ok: false, message: "Only owners and admins can do this." };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("reset_bank_line", { p_line: lineId });
+  if (error) return failure(error);
+  done(slug);
+  return { ok: true };
+}
+
+/** Removes a statement import nobody has used yet (e.g. imported with the wrong columns). */
+export async function deleteImport(slug: string, importId: string): Promise<Result> {
+  if (!z.uuid().safeParse(importId).success) return { ok: false };
+  if (!(await managers(slug))) return { ok: false, message: "Only owners and admins can do this." };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc("delete_bank_import", { p_import: importId });
+  if (error) return failure(error);
+  done(slug);
+  return { ok: true };
+}

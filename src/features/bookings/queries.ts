@@ -17,8 +17,8 @@ const bookingRow = z.object({
 });
 export type BookingRow = z.infer<typeof bookingRow>;
 
-/** Bookings from today (SAST) for the next `days` days, soonest first. */
-export async function listUpcoming(ctx: WorkspaceContext, fromIso: string, days = 30): Promise<BookingRow[]> {
+/** Bookings from today (SAST) for the next `days` days (the database allows bookings up to 60 days ahead), soonest first. */
+export async function listUpcoming(ctx: WorkspaceContext, fromIso: string, days = 60): Promise<BookingRow[]> {
   const from = new Date(`${fromIso}T00:00:00+02:00`);
   const to = new Date(from.getTime() + days * 86_400_000);
   const supabase = await createServerClient();

@@ -69,3 +69,17 @@ export async function openInvoices(ctx: WorkspaceContext): Promise<(OpenInvoice 
     .map((r) => ({ id: r.id, number: r.number ?? "", owedCents: r.total_cents - r.paid_cents - r.credited_cents, client: r.contacts?.name ?? "" }))
     .filter((r) => r.owedCents > 0 && r.number);
 }
+
+export async function listImports(ctx: WorkspaceContext): Promise<{ id: string; file_name: string; added_count: number; created_at: string }[]> {
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("bank_imports")
+    .select("id, file_name, added_count, created_at")
+    .eq("workspace_id", ctx.workspace.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  return z
+    .array(z.object({ id: z.uuid(), file_name: z.string(), added_count: z.coerce.number(), created_at: z.string() }))
+    .catch([])
+    .parse(data ?? []);
+}

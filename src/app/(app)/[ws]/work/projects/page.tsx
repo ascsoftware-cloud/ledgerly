@@ -6,24 +6,33 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { WorkTabs } from "@/features/work/components/work-tabs";
-import { listProjects, listTasks } from "@/features/work/queries";
+import { listArchivedProjects, listProjects, listTasks } from "@/features/work/queries";
+import { RestoreProject, UndoProjectArchive } from "@/features/work/components/project-form";
 import { formatMoney } from "@/lib/money";
 import { requireWorkspace } from "@/lib/workspace";
 
 export const metadata: Metadata = { title: "Projects", robots: { index: false } };
 
-export default function ProjectsPage({ params }: PageProps<"/[ws]/work/projects">) {
+export default function ProjectsPage({ params, searchParams }: PageProps<"/[ws]/work/projects">) {
   return (
     <Suspense fallback={<PageSkeleton variant="list" />}>
-      <Projects params={params} />
+      <Projects params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function Projects({ params }: { params: PageProps<"/[ws]/work/projects">["params"] }) {
+async function Projects({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/[ws]/work/projects">["params"];
+  searchParams: PageProps<"/[ws]/work/projects">["searchParams"];
+}) {
   const { ws } = await params;
+  const sp = await searchParams;
   const ctx = await requireWorkspace(ws);
-  const [projects, tasks] = await Promise.all([listProjects(ctx), listTasks(ctx)]);
+  const canArchive = ctx.role === "owner" || ctx.role === "admin";
+  const [projects, tasks, archived] = await Promise.all([listProjects(ctx), listTasks(ctx), canArchive ? listArchivedProjects(ctx) : []]);
   const canWrite = ctx.role !== "accountant";
   const open = (id: string) => tasks.filter((t) => t.project_id === id && t.status !== "done").length;
 
@@ -38,6 +47,7 @@ async function Projects({ params }: { params: PageProps<"/[ws]/work/projects">["
         )}
       </header>
       <WorkTabs slug={ws} current="projects" />
+      {canArchive && typeof sp.archived === "string" && /^[0-9a-f-]{36}$/.test(sp.archived) && <UndoProjectArchive slug={ws} id={sp.archived} />}
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
@@ -61,6 +71,19 @@ async function Projects({ params }: { params: PageProps<"/[ws]/work/projects">["
             </li>
           ))}
         </ul>
+      )}
+      {archived.length > 0 && (
+        <details className="rounded-2xl border bg-card p-4">
+          <summary className="cursor-pointer font-medium">Archived projects ({archived.length})</summary>
+          <ul className="mt-2 divide-y" aria-label="Archived projects">
+            {archived.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-3 py-1">
+                <span className="text-muted-foreground">{a.name}</span>
+                <RestoreProject slug={ws} id={a.id} name={a.name} />
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

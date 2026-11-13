@@ -35,7 +35,9 @@ async function Done({ params, searchParams }: { params: PageProps<"/book/[slug]/
         <br />
         <strong>{whenLabel(b.starts_at)}</strong>
       </p>
-      <p className="text-sm text-muted-foreground">A confirmation email is on its way, and a reminder the day before.</p>
+      <p className="text-sm text-muted-foreground">
+        A confirmation email is on its way{Date.parse(b.starts_at) - Date.parse(b.created_at) > 25 * 3600_000 ? ", and a reminder the day before" : ""}.
+      </p>
       <a href={`/book/${slug}/${t}.ics`} className={buttonVariants({ variant: "outline", size: "touch" })}>
         <CalendarPlus className="size-5" aria-hidden /> Add to calendar
       </a>

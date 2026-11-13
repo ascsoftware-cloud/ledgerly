@@ -62,4 +62,20 @@ test("a project with tasks and a subtask, ticked off, moved on the board and see
   await page.getByRole("link", { name: "Calendar", exact: true }).click();
   await expect(page.getByRole("gridcell", { name: new RegExp(`^${yyyy}-${mm}-15, 1 due`) })).toContainText("Order tiles");
   await expect(page.getByText("Tasks without a due date are in the list view.")).toBeVisible();
+
+  // Archiving a project can be undone at once, or restored later.
+  await page.goto(`${home}/work/projects`);
+  await page.getByRole("link", { name: /Kitchen renovation/ }).click();
+  await page.getByRole("button", { name: "Archive project" }).click();
+  await expect(page.getByText("Project archived")).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByText("Project is back")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Projects" })).toContainText("Kitchen renovation");
+  await page.getByRole("link", { name: /Kitchen renovation/ }).click();
+  await page.getByRole("button", { name: "Archive project" }).click();
+  await expect(page.getByRole("list", { name: "Projects" })).toHaveCount(0);
+  await page.getByText(/Archived projects/).click();
+  await page.getByRole("button", { name: "Restore Kitchen renovation" }).click();
+  await expect(page.getByText("Kitchen renovation restored")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Projects" })).toContainText("Kitchen renovation");
 });

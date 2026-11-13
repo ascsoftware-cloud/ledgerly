@@ -26,7 +26,7 @@ async function Bookings({ params }: { params: PageProps<"/[ws]/work/bookings">["
   const { ws } = await params;
   const ctx = await requireWorkspace(ws);
   const today = todaySAST();
-  const rows = await listUpcoming(ctx, today, 30);
+  const rows = await listUpcoming(ctx, today, 60);
   const canWrite = ctx.role !== "accountant";
   const canSetUp = ctx.role === "owner" || ctx.role === "admin";
   const days = new Map<string, typeof rows>();
@@ -49,7 +49,7 @@ async function Bookings({ params }: { params: PageProps<"/[ws]/work/bookings">["
       {rows.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
-          title="No bookings in the next 30 days"
+          title="No bookings in the next 60 days"
           body="Share your booking page and clients can pick a time that suits them, any time of day."
           action={canSetUp ? { label: "Set up bookings", href: `/${ws}/settings/bookings` } : { label: "Back to tasks", href: `/${ws}/work` }}
         />

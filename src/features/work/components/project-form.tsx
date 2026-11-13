@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { archiveProject, saveProject, type WorkFormResult } from "../actions";
+import { saveProject, setProjectArchived, type WorkFormResult } from "../actions";
 
 export type ProjectInitial = { name: string; contactId: string; rate: string; status: string; notes: string };
 const EMPTY: ProjectInitial = { name: "", contactId: "", rate: "", status: "active", notes: "" };
@@ -95,14 +95,62 @@ export function ArchiveProject({ slug, projectId }: { slug: string; projectId: s
       disabled={busy}
       onClick={async () => {
         setBusy(true);
-        const r = await archiveProject(slug, projectId);
+        const r = await setProjectArchived(slug, projectId, true);
         setBusy(false);
         if (!r.ok) return toast.error("Couldn't archive the project.");
-        toast.success("Project archived");
-        router.push(`/${slug}/work/projects`);
+        router.push(`/${slug}/work/projects?archived=${projectId}`);
       }}
     >
       Archive project
+    </Button>
+  );
+}
+
+/** On the project list right after an archive: one toast, six seconds to undo. */
+export function UndoProjectArchive({ slug, id }: { slug: string; id: string }) {
+  const router = useRouter();
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    if (shown.current === id) return;
+    shown.current = id;
+    router.replace(`/${slug}/work/projects`, { scroll: false });
+    toast("Project archived", {
+      duration: 6000,
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          const r = await setProjectArchived(slug, id, false);
+          if (r.ok) {
+            toast.success("Project is back");
+            router.refresh();
+          } else toast.error("Couldn't undo. Try again.");
+        },
+      },
+    });
+  }, [id, router, slug]);
+  return null;
+}
+
+export function RestoreProject({ slug, id, name }: { slug: string; id: string; name: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="touch"
+      disabled={pending}
+      aria-label={`Restore ${name}`}
+      onClick={() =>
+        start(async () => {
+          const r = await setProjectArchived(slug, id, false);
+          if (!r.ok) return void toast.error("Couldn't restore it.");
+          toast.success(`${name} restored`);
+          router.refresh();
+        })
+      }
+    >
+      Restore
     </Button>
   );
 }

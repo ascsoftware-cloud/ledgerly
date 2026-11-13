@@ -78,7 +78,9 @@ export type BookingEmailInput = {
 export function buildBookingEmail(b: BookingEmailInput, kind: "confirmed" | "reminder"): { subject: string; html: string; text: string } {
   const when = whenLabel(b.startsAt);
   const subject = `${kind === "reminder" ? "Reminder" : "Booked"}: ${b.serviceName} on ${when}`;
-  const first = b.customerName.trim().split(/\s+/)[0] ?? b.customerName;
+  // The name is typed by a stranger: greet by first name only when it looks like one (letters, hyphen, apostrophe).
+  const token = b.customerName.trim().split(/\s+/)[0] ?? "";
+  const first = /^[\p{L}][\p{L}'’-]{0,39}$/u.test(token) ? token : "there";
   const lead = kind === "reminder" ? `A reminder of your booking with ${b.businessName}.` : `Your booking with ${b.businessName} is confirmed.`;
   const detail = `${b.serviceName}, ${when} (${b.durationMin} minutes).`;
   const text = [`Hi ${first},`, "", lead, "", detail, "", `Add it to your calendar: ${b.icsLink}`, "", `Reply to this email to reach ${b.businessName}.`].join("\n");

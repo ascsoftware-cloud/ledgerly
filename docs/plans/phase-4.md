@@ -30,3 +30,11 @@ Expands Phase 4 of `docs/plan.md`. Spec: `docs/spec.md` §3 (roles), §6.5, §6.
 5. **4.5 Bookings** — 0024 services, availability, bookings; settings; public `/book/[slug]`; outbox confirmation and reminder; .ics; quest `booking_page`.
 
 Each task: SQL test file first (RLS isolation, roles, the plan's named tests), unit tests for pure helpers, one e2e journey, commit.
+
+## As built (differences from the plan above, after the Phase 4 review)
+
+- **Bank statements** are visible to owner, admin and accountant, and written by owner and admin only. Staff do not see them (RLS, the definer functions and the page all enforce it). Matched or logged lines can be undone (`reset_bank_line`) once the payment is removed or the expense archived; an import nobody has used can be deleted (`delete_bank_import`).
+- **Bookings:** `create_booking` is callable only by the server (service role), behind an IP rate limit, so the public key can never trigger an email. Weekdays are ISO 1–7. A booking stores `starts_at`, `ends_at` and `blocked_until` (end plus gap); an exclusion constraint on `tstzrange(starts_at, blocked_until)` per workspace stops overlaps. Horizons: the public page offers 14 days, the database allows 60, the team list shows 60.
+- **Time:** an entry bills as hours to 2 decimals, minimum 0.01 h (entries under 18 s). A timer left running is capped at 24 hours by both start and stop. Tasks assigned to someone who leaves are unassigned.
+- **Expenses:** the VAT toggle appears (and defaults on) only for VAT-registered businesses. Projects archive with a 6-second undo and an Archived list with Restore.
+- **Not in Phase 4** (deferred, logged in the ledger as minors): a calendar view of bookings (the team sees a day-grouped list), owner notification when a client books (Phase 6), cancelled-booking emails to the client (Phase 6), OCR (Phase 6), idempotency for manual time entries, rounding hours to 4 decimals instead of 2.

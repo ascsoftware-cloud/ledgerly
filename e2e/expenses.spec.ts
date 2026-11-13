@@ -23,6 +23,8 @@ test("log an expense with a receipt, see it in the month, archive it and undo", 
   await form.getByRole("button", { name: "Log expense" }).click();
   await expect(form.getByRole("alert")).toContainText("Enter the amount");
 
+  // A new business is not VAT-registered, so there is no input VAT to claim and no VAT toggle.
+  await expect(form.getByLabel(/includes 15% VAT/)).toHaveCount(0);
   await form.getByLabel("Amount (R)").fill("1 150,00");
   await form.getByLabel("Category").selectOption({ label: "Fuel and travel" });
   await form.getByLabel(/Supplier/).fill("Engen Rivonia");
@@ -33,7 +35,7 @@ test("log an expense with a receipt, see it in the month, archive it and undo", 
   const list = page.getByRole("list", { name: /Expenses in/ });
   await expect(list).toContainText("Engen Rivonia");
   await expect(list).toContainText("R 1 150,00");
-  await expect(page.getByRole("region", { name: "Month" })).toContainText("VAT to claim R 150,00");
+  await expect(page.getByRole("region", { name: "Month" })).not.toContainText("VAT to claim");
 
   // The receipt is private: only a short-lived signed link opens it.
   await list.getByRole("link", { name: /Engen Rivonia/ }).click();
