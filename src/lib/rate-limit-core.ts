@@ -15,7 +15,9 @@ export type LimitKind =
   | "pay-ip"
   | "pay-return-ip"
   | "app-connect"
-  | "book-ip";
+  | "book-ip"
+  | "invite-ip"
+  | "portal-ip";
 
 type RpcResult = { data: boolean | null; error: { message: string; code?: string } | null };
 type RpcCall = (args: { p_bucket: string; max_hits: number; window_seconds: number }) => Promise<RpcResult>;

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Blocks, CalendarClock, CreditCard, LogOut } from "lucide-react";
+import { Blocks, CalendarClock, CreditCard, LogOut, Users } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { signOut } from "@/features/auth/actions";
@@ -105,6 +105,19 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             <span className="flex-1">
               Connect apps
               <span className="block text-sm font-normal text-muted-foreground">Xero, Sage, Courier Guy and Shopify</span>
+            </span>
+          </Link>
+        )}
+
+        {(ctx.role === "owner" || ctx.role === "admin") && (
+          <Link
+            href={`/${ctx.workspace.slug}/settings/team`}
+            className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+          >
+            <Users className="size-5 text-primary" aria-hidden />
+            <span className="flex-1">
+              Team
+              <span className="block text-sm font-normal text-muted-foreground">Invite people, change roles, see the activity log</span>
             </span>
           </Link>
         )}

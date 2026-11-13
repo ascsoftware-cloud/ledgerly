@@ -98,3 +98,30 @@ ${p(`<strong>${escapeHtml(detail)}</strong>`)}
 </body></html>`;
   return { subject, html, text };
 }
+
+export type InviteEmailInput = { businessName: string; inviterName: string; role: "admin" | "staff" | "accountant"; link: string };
+
+/** Invitation to join a business's team. Names are typed by users, so every value is escaped. */
+export function buildInviteEmail(i: InviteEmailInput): { subject: string; html: string; text: string } {
+  // Header-safe: no line breaks, and not so long that it hides the business name.
+  const oneLine = (s: string, max: number) => s.replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
+  const inviter = oneLine(i.inviterName, 60) || "Someone";
+  const business = oneLine(i.businessName, 80) || "a business";
+  const subject = `${inviter} invited you to ${business} on Ledgerly`;
+  const lead = `${inviter} has invited you to join ${business} on Ledgerly as ${i.role === "admin" ? "an admin" : i.role === "staff" ? "staff" : "the accountant"}.`;
+  const note = "Sign in with this email address (Google or a one-time code). The link works for 7 days.";
+  const text = ["Hi,", "", lead, "", `Accept the invitation: ${i.link}`, "", note].join("\n");
+  const p = (s: string) => `<p style="margin:0 0 16px">${s}</p>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f7f8fa;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+<div style="max-width:520px;margin:0 auto;padding:32px 20px">
+<div style="background:#ffffff;border:1px solid #e2e6ec;border-radius:16px;padding:28px">
+${p("Hi,")}
+${p(escapeHtml(lead))}
+<p style="margin:24px 0"><a href="${escapeHtml(i.link)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">Accept the invitation</a></p>
+${p(escapeHtml(note))}
+<p style="margin:0;font-size:13px;color:#566176">Or open this link: ${escapeHtml(i.link)}</p>
+</div>
+</div>
+</body></html>`;
+  return { subject, html, text };
+}

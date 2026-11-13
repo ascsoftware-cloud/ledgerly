@@ -219,3 +219,61 @@ describe("booking email greeting (the name is typed by a stranger)", () => {
     }
   });
 });
+
+describe("team invitation emails", () => {
+  const WS = "1e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e";
+  const invite = (id: string): OutboxRow => ({
+    ...row(id),
+    template: "team_invite",
+    to_address: "zed@team.test",
+    payload: { invite_id: "7e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e", token: "tok_ABC-123" },
+  });
+  const loaded = { businessName: "Olga Plumbing", inviterName: "Olga", role: "staff" as const };
+
+  test("the worker sends the invitation with the link built from the stored token, scoped to the workspace", async () => {
+    const asked: unknown[] = [];
+    const sent: { to: string; text: string }[] = [];
+    await processOutbox({
+      claim: async () => [invite("i1")],
+      load: async () => null,
+      loadInvite: async (...args) => {
+        asked.push(args);
+        return { ...loaded, link: `https://x.test/invite/${args[2]}` };
+      },
+      send: async (m) => {
+        sent.push({ to: m.to, text: m.text });
+        return { ok: true, id: "x" };
+      },
+      finish: async () => {},
+    });
+    expect(asked).toEqual([["7e0b5c7e-3a1d-4b8a-9c3e-2f1a0b9c8d7e", WS, "tok_ABC-123"]]);
+    expect(sent[0]?.to).toBe("zed@team.test");
+    expect(sent[0]?.text).toContain("https://x.test/invite/tok_ABC-123");
+  });
+
+  test("an invitation that is no longer open is dropped, not sent", async () => {
+    const finished: unknown[] = [];
+    let sends = 0;
+    await processOutbox({
+      claim: async () => [invite("i2")],
+      load: async () => null,
+      loadInvite: async () => "closed",
+      send: async () => (sends++, { ok: true, id: "x" }),
+      finish: async (...args) => void finished.push(args),
+    });
+    expect(sends).toBe(0);
+    expect(finished).toEqual([["i2", true, null, "skipped: invitation no longer open"]]);
+  });
+
+  test("a missing invitation fails the message", async () => {
+    const finished: unknown[] = [];
+    await processOutbox({
+      claim: async () => [invite("i3")],
+      load: async () => null,
+      loadInvite: async () => null,
+      send: async () => ({ ok: true, id: "x" }),
+      finish: async (...args) => void finished.push(args),
+    });
+    expect(finished).toEqual([["i3", false, null, "Invitation not found"]]);
+  });
+});
