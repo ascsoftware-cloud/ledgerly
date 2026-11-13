@@ -33,8 +33,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except build assets, images and the payment webhooks
+    // Everything except build assets, images, the service worker and the payment webhooks
     // (webhooks carry no session and must not be delayed).
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)",
   ],
 };

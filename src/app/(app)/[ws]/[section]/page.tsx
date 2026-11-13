@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Bell, Blocks, CalendarClock, CreditCard, LogOut, Sparkles, Users, Zap } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Bell, Blocks, CalendarClock, CreditCard, Sparkles, Users, Zap } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
-import { signOut } from "@/features/auth/actions";
+import { InstallButton } from "@/components/pwa/pwa-tools";
+import { SignOutForm } from "@/components/pwa/sign-out-form";
 import { getEnabledNav } from "@/features/dashboard/nav";
 import { NavTabs } from "@/features/integrations/components/nav-tabs";
 import { getNavTabs } from "@/features/integrations/queries";
@@ -163,12 +163,10 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </h2>
           <p className="mt-2 font-medium">{ctx.user.email}</p>
           <p className="text-sm text-muted-foreground capitalize">{ctx.role}</p>
-          <form action={signOut} className="mt-4">
-            <button type="submit" className={buttonVariants({ variant: "outline", size: "touch" })}>
-              <LogOut className="size-5" aria-hidden />
-              Sign out
-            </button>
-          </form>
+          <SignOutForm />
+          <div className="mt-3">
+            <InstallButton />
+          </div>
         </section>
 
         <p className="text-sm text-muted-foreground">Settings, team and billing arrive in later updates.</p>

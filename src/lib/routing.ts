@@ -15,6 +15,7 @@ export const APP_ROUTES = new Set([
   "invite",
   "portal",
   "api",
+  "offline",
   "_next",
 ]);
 

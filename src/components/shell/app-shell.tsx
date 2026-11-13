@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore, type ReactNode } from "react";
+import { OfflineBanner, ServiceWorkerRegister } from "@/components/pwa/pwa-tools";
 import { BottomTabs } from "./bottom-tabs";
 import { QuickAdd, type QuickAddItem } from "./quick-add";
 import type { NavItem } from "./nav";
@@ -75,8 +76,12 @@ export function AppShell({
       </a>
       <Sidebar items={nav} title={title} titleHref={titleHref} collapsed={collapsed} onToggle={toggle} quickAdd={quickAdd} />
       <main id="main" className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-10">
-        <div className="mx-auto w-full max-w-5xl">{children}</div>
+        <div className="mx-auto w-full max-w-5xl">
+          <OfflineBanner />
+          {children}
+        </div>
       </main>
+      <ServiceWorkerRegister />
       {bell && <div className="fixed top-3 right-3 z-40 flex items-center gap-2 print:hidden">{bell}</div>}
       <QuickAdd items={quickAdd} variant="fab" />
       <BottomTabs items={nav} />
