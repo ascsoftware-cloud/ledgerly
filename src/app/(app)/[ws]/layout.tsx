@@ -34,7 +34,7 @@ async function WorkspaceFrame({
   const shown = Object.fromEntries(tabs.map((t) => [t.tab, t.shown]));
   return (
     <AppShell
-      nav={getEnabledNav(ctx.workspace.slug, ctx.modules, shown)}
+      nav={getEnabledNav(ctx.workspace.slug, ctx.modules, shown, ctx.role)}
       title={ctx.workspace.name}
       titleHref={`/${ctx.workspace.slug}/more`}
       quickAdd={

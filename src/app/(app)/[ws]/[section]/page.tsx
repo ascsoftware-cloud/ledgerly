@@ -28,7 +28,7 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
   if (section === "more") {
     const [workspaces, tabs] = await Promise.all([listMyWorkspaces(), getNavTabs(ctx.workspace.id)]);
     // The phone tab bar fits four sections plus More; the rest are listed here so none are out of reach.
-    const nav = getEnabledNav(ctx.workspace.slug, ctx.modules, Object.fromEntries(tabs.map((t) => [t.tab, t.shown])));
+    const nav = getEnabledNav(ctx.workspace.slug, ctx.modules, Object.fromEntries(tabs.map((t) => [t.tab, t.shown])), ctx.role);
     const overflow = nav.length > 5 ? nav.slice(4, -1) : [];
     return (
       <div className="space-y-6">
