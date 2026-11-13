@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Blocks, CalendarClock, CreditCard, LogOut, Users } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Bell, Blocks, CalendarClock, CreditCard, Sparkles, Users, Zap } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
-import { signOut } from "@/features/auth/actions";
+import { InstallButton } from "@/components/pwa/pwa-tools";
+import { SignOutForm } from "@/components/pwa/sign-out-form";
 import { getEnabledNav } from "@/features/dashboard/nav";
 import { NavTabs } from "@/features/integrations/components/nav-tabs";
 import { getNavTabs } from "@/features/integrations/queries";
@@ -122,6 +122,39 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </Link>
         )}
 
+        <Link
+          href={`/${ctx.workspace.slug}/settings/automations`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Zap className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Automations
+            <span className="block text-sm font-normal text-muted-foreground">Chase invoices and get alerts by themselves</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/notifications`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Bell className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Notification settings
+            <span className="block text-sm font-normal text-muted-foreground">Choose what you hear about, and turn on push</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/ai`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            AI helper
+            <span className="block text-sm font-normal text-muted-foreground">Ask questions and read receipts. Off until you switch it on</span>
+          </span>
+        </Link>
+
         <NavTabs slug={ctx.workspace.slug} tabs={tabs} canChange={ctx.role === "owner" || ctx.role === "admin"} />
 
         <section aria-labelledby="account-heading" className="rounded-2xl border bg-card p-5 shadow-card">
@@ -130,12 +163,10 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </h2>
           <p className="mt-2 font-medium">{ctx.user.email}</p>
           <p className="text-sm text-muted-foreground capitalize">{ctx.role}</p>
-          <form action={signOut} className="mt-4">
-            <button type="submit" className={buttonVariants({ variant: "outline", size: "touch" })}>
-              <LogOut className="size-5" aria-hidden />
-              Sign out
-            </button>
-          </form>
+          <SignOutForm />
+          <div className="mt-3">
+            <InstallButton />
+          </div>
         </section>
 
         <p className="text-sm text-muted-foreground">Settings, team and billing arrive in later updates.</p>

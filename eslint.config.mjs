@@ -20,6 +20,8 @@ const SERVICE_ROLE_ALLOWED = [
   "src/server/bookings/create.ts",
   // The contract signature records the visitor's IP and device, so only the server may call sign_contract.
   "src/server/portal/sign.ts",
+  // The AI allowance functions are callable by the server only, so a person cannot skip their limits.
+  "src/server/ai/allowance.ts",
   // Outside apps (Courier Guy, Shopify, Xero, Sage) read their credentials from Vault and run
   // queued jobs. Functions there take a workspace or connection id the caller already authorised.
   "src/server/integrations/**",

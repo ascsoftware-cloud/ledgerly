@@ -1,0 +1,20 @@
+-- Down for 0032_notifications.
+select cron.unschedule('daily-reminders');
+drop function if exists public.drop_push_subscription(text);
+drop function if exists public.claim_push(integer);
+drop function if exists app.daily_reminders();
+drop trigger if exists notify_task on public.tasks;
+drop trigger if exists notify_low_stock on public.stock_movements;
+drop trigger if exists notify_booking on public.bookings;
+drop trigger if exists notify_document on public.sales_documents;
+drop trigger if exists notify_payment on public.payments;
+drop function if exists app.notify_task();
+drop function if exists app.notify_low_stock();
+drop function if exists app.notify_booking();
+drop function if exists app.notify_document();
+drop function if exists app.notify_payment();
+drop function if exists app.notify_roles(uuid, text[], text, text, text, text);
+drop function if exists app.notify(uuid, uuid, text, text, text, text);
+drop function if exists app.ws_slug(uuid);
+alter publication supabase_realtime drop table public.notifications;
+drop table if exists public.push_subscriptions, public.notification_prefs, public.notifications;
