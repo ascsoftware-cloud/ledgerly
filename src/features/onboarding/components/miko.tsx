@@ -1,12 +1,7 @@
-/** Miko the meerkat: stands up, keeps watch, says one short thing. */
-export function Miko({ line }: { line: string }) {
+/** Miko the meerkat's face, on its own: used in Ask Miko and wherever a small friendly mark is wanted. */
+export function MikoAvatar({ className = "size-14", bob = false }: { className?: string; bob?: boolean }) {
   return (
-    <div className="flex items-end gap-3">
-      <svg
-        viewBox="0 0 64 64"
-        aria-hidden
-        className="size-14 shrink-0 motion-safe:animate-[miko-bob_2.4s_ease-in-out_infinite]"
-      >
+    <svg viewBox="0 0 64 64" aria-hidden className={`${className} shrink-0 ${bob ? "motion-safe:animate-[miko-bob_2.4s_ease-in-out_infinite]" : ""}`}>
         <ellipse cx="32" cy="50" rx="13" ry="12" fill="#c8a47a" />
         <ellipse cx="32" cy="52" rx="8" ry="8" fill="#efdcc0" />
         <circle cx="19" cy="16" r="4" fill="#8a6a48" />
@@ -22,6 +17,14 @@ export function Miko({ line }: { line: string }) {
         <ellipse cx="32" cy="27.6" rx="2" ry="1.4" fill="#1b1410" />
         <path d="M29.5 30.5q2.5 2 5 0" fill="none" stroke="#1b1410" strokeWidth="1" strokeLinecap="round" />
       </svg>
+  );
+}
+
+/** Miko the meerkat: stands up, keeps watch, says one short thing. */
+export function Miko({ line }: { line: string }) {
+  return (
+    <div className="flex items-end gap-3">
+      <MikoAvatar bob />
       <p
         role="status"
         className="relative mb-2 rounded-2xl rounded-bl-sm border bg-card px-4 py-2.5 text-sm font-medium shadow-card"

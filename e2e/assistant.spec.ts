@@ -18,7 +18,7 @@ test("the AI helper is off until switched on, then answers, counts usage and rea
   const home = new URL(page.url()).pathname;
 
   // Off by default: no Ask button, and the expense form offers no scan.
-  await expect(page.getByRole("button", { name: "Ask Ledgerly" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ask Miko" })).toHaveCount(0);
   await page.goto(`${home}/money/expenses/new`);
   await expect(page.getByRole("button", { name: /Fill in from the photo/ })).toHaveCount(0);
 
@@ -30,7 +30,7 @@ test("the AI helper is off until switched on, then answers, counts usage and rea
 
   // Ask a question: the answer comes through a tool call, and the allowance goes down.
   await page.reload();
-  await page.getByRole("button", { name: "Ask Ledgerly" }).click();
+  await page.getByRole("button", { name: "Ask Miko" }).click();
   const panel = page.getByRole("dialog");
   await expect(panel.getByText("0 of 20 AI requests used this month")).toBeVisible();
   await panel.getByRole("button", { name: "Who owes me money?" }).click();
@@ -58,5 +58,5 @@ test("the AI helper is off until switched on, then answers, counts usage and rea
   await page.getByRole("checkbox", { name: "Use the AI helper in this business" }).uncheck();
   await expect(page.getByText("AI helper switched off")).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Ask Ledgerly" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ask Miko" })).toHaveCount(0);
 });

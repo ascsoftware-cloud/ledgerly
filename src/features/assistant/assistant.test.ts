@@ -28,7 +28,8 @@ describe("askSchema", () => {
 
 describe("buildSystemPrompt", () => {
   const p = buildSystemPrompt({ business: "Ayanda's Tiles", today: "2026-11-13" });
-  test("names the business and today's date", () => {
+  test("is Miko, and names the business and today's date", () => {
+    expect(p).toContain("Miko");
     expect(p).toContain("Ayanda's Tiles");
     expect(p).toContain("2026-11-13");
   });

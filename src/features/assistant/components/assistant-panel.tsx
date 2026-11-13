@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MikoAvatar } from "@/features/onboarding/components/miko";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { askAssistant } from "../actions";
 
@@ -43,14 +43,16 @@ export function AssistantPanel({ slug, used: initialUsed, limit }: { slug: strin
 
   return (
     <Sheet>
-      <SheetTrigger render={<Button variant="outline" size="icon" aria-label="Ask Ledgerly" className="size-11 rounded-full bg-card shadow-card" />}>
-        <Sparkles className="size-5" aria-hidden />
+      <SheetTrigger render={<Button variant="outline" size="icon" aria-label="Ask Miko" className="size-11 rounded-full bg-card shadow-card" />}>
+        <MikoAvatar className="size-8" />
       </SheetTrigger>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b p-4 pr-14">
-          <SheetTitle>Ask Ledgerly</SheetTitle>
+          <SheetTitle className="flex items-center gap-2">
+            <MikoAvatar className="size-9" /> Ask Miko
+          </SheetTitle>
           <SheetDescription>
-            AI answers can be wrong: check figures that matter. Your question and the figures it needs are sent to our AI provider. Nothing is changed or saved.
+            Miko can be wrong: check figures that matter. Your question and the figures it needs are sent to our AI provider. Nothing is changed or saved.
           </SheetDescription>
         </SheetHeader>
 
@@ -92,7 +94,7 @@ export function AssistantPanel({ slug, used: initialUsed, limit }: { slug: strin
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               maxLength={500}
-              placeholder="Ask about your business…"
+              placeholder="Ask Miko about your business…"
               aria-label="Your question"
               className="h-12 min-w-0 flex-1 rounded-xl border bg-background px-3 text-base"
             />
