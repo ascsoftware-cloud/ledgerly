@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { contactOptions } from "@/features/pipeline/queries";
+import { pickerProducts } from "@/features/inventory/queries";
 import { DocumentEditor } from "@/features/sales/components/document-editor";
 import { getDocument } from "@/features/sales/queries";
 import { formatDate } from "@/lib/dates";
@@ -33,7 +34,10 @@ async function EditDocument({ params }: { params: PageProps<"/[ws]/money/[id]/ed
   const d = await getDocument(ctx, id);
   if (!d) notFound();
   if (d.status !== "draft") redirect(`/${ws}/money/${d.id}`);
-  const contacts = await contactOptions(ctx);
+  const [contacts, products] = await Promise.all([
+    contactOptions(ctx),
+    d.kind === "invoice" && ctx.modules.includes("inventory") ? pickerProducts(ctx) : Promise.resolve([]),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -55,6 +59,7 @@ async function EditDocument({ params }: { params: PageProps<"/[ws]/money/[id]/ed
         kind={d.kind}
         contacts={contacts}
         vatRegistered={d.business.vatRegistered}
+        products={products}
         initial={{
           contactId: d.contact_id,
           dueDate: d.due_date ? ddmmyyyy(d.due_date) : "",
@@ -69,6 +74,7 @@ async function EditDocument({ params }: { params: PageProps<"/[ws]/money/[id]/ed
             unitPrice: rand(l.unit_cents),
             discount: l.discount_pct ? String(l.discount_pct).replace(".", ",") : "",
             vat: l.vat_rate === 15 ? "15" : "0",
+            productId: l.product_id ?? "",
           })),
         }}
       />

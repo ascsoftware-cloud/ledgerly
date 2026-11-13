@@ -2,21 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Blocks, CalendarClock, CreditCard, LogOut, Package } from "lucide-react";
+import { Blocks, CalendarClock, CreditCard, LogOut } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { EmptyState } from "@/components/states/empty-state";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { signOut } from "@/features/auth/actions";
+import { getEnabledNav } from "@/features/dashboard/nav";
 import { NavTabs } from "@/features/integrations/components/nav-tabs";
 import { getNavTabs } from "@/features/integrations/queries";
 import { listMyWorkspaces, requireWorkspace } from "@/lib/workspace";
 
 export const metadata: Metadata = { robots: { index: false } };
-
-/** Sections that arrive in later phases show a clear "on its way" screen, not a 404. */
-const COMING = {
-  stock: { title: "Stock", icon: Package, body: "Products and stock levels are on their way." },
-} as const;
 
 export default function SectionPage({ params }: PageProps<"/[ws]/[section]">) {
   return (
@@ -32,6 +27,9 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
 
   if (section === "more") {
     const [workspaces, tabs] = await Promise.all([listMyWorkspaces(), getNavTabs(ctx.workspace.id)]);
+    // The phone tab bar fits four sections plus More; the rest are listed here so none are out of reach.
+    const nav = getEnabledNav(ctx.workspace.slug, ctx.modules, Object.fromEntries(tabs.map((t) => [t.tab, t.shown])));
+    const overflow = nav.length > 5 ? nav.slice(4, -1) : [];
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">More</h1>
@@ -55,6 +53,23 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             ))}
           </ul>
         </section>
+
+        {overflow.length > 0 && (
+          <section aria-labelledby="sections-heading" className="rounded-2xl border bg-card p-5 shadow-card md:hidden">
+            <h2 id="sections-heading" className="text-sm font-medium text-muted-foreground">
+              More sections
+            </h2>
+            <ul className="mt-2 divide-y">
+              {overflow.map((item) => (
+                <li key={item.key}>
+                  <Link href={item.href} className="flex min-h-12 items-center py-2 font-medium hover:text-primary">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {(ctx.role === "owner" || ctx.role === "admin") && (
           <Link
@@ -115,17 +130,5 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
     );
   }
 
-  if (!(section in COMING)) notFound();
-  const s = COMING[section as keyof typeof COMING];
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{s.title}</h1>
-      <EmptyState
-        icon={s.icon}
-        title="On its way"
-        body={s.body}
-        action={{ label: "Back to home", href: `/${ctx.workspace.slug}` }}
-      />
-    </div>
-  );
+  notFound();
 }

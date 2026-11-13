@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { contactOptions } from "@/features/pipeline/queries";
 import { DocumentEditor } from "@/features/sales/components/document-editor";
+import { pickerProducts } from "@/features/inventory/queries";
 import { getBusiness } from "@/features/sales/queries";
 import { requireWorkspace } from "@/lib/workspace";
 
@@ -31,7 +32,11 @@ async function NewDocument({
   const kind = sp.kind === "quote" ? "quote" : "invoice";
   const ctx = await requireWorkspace(ws);
   if (ctx.role === "accountant") notFound();
-  const [contacts, business] = await Promise.all([contactOptions(ctx), getBusiness(ctx)]);
+  const [contacts, business, products] = await Promise.all([
+    contactOptions(ctx),
+    getBusiness(ctx),
+    kind === "invoice" && ctx.modules.includes("inventory") ? pickerProducts(ctx) : Promise.resolve([]),
+  ]);
   const client = typeof sp.client === "string" && contacts.some((c) => c.id === sp.client) ? sp.client : "";
 
   return (
@@ -46,6 +51,7 @@ async function NewDocument({
         kind={kind}
         contacts={contacts}
         vatRegistered={business.vatRegistered}
+        products={products}
         initial={client ? { contactId: client, dueDate: "", notes: "", depositType: "none", depositValue: "", lines: [] } : undefined}
       />
     </div>

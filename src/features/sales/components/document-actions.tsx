@@ -46,11 +46,14 @@ export function DocumentActions({
   const isDraft = status === "draft";
   const whatsapp = `https://wa.me/${clientPhone ? clientPhone.replace(/^\+/, "") : ""}?text=${encodeURIComponent(whatsappText)}`;
 
-  const run = (fn: () => Promise<{ ok: boolean; message?: string; number?: string } | undefined | void>, success?: string) =>
+  const run = (fn: () => Promise<{ ok: boolean; message?: string; number?: string; warning?: string } | undefined | void>, success?: string) =>
     start(async () => {
       const res = await fn();
       if (res && !res.ok) toast.error(res.message ?? "That didn't work.");
-      else if (success) toast.success(success);
+      else {
+        if (success) toast.success(success);
+        if (res && "warning" in res && res.warning) toast.warning(res.warning, { duration: 10000 });
+      }
       router.refresh();
     });
 
