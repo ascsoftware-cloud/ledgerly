@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Bell, Blocks, Building2, CalendarClock, CreditCard, Gem, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { Bell, Blocks, Building2, CalendarClock, CreditCard, Gem, ShieldCheck, Users, Zap } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
+import { getAiStatus } from "@/features/assistant/queries";
+import { MikoAvatar } from "@/features/onboarding/components/miko";
 import { InstallButton } from "@/components/pwa/pwa-tools";
 import { SignOutForm } from "@/components/pwa/sign-out-form";
 import { getEnabledNav } from "@/features/dashboard/nav";
@@ -26,7 +28,7 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
   const ctx = await requireWorkspace(ws);
 
   if (section === "more") {
-    const [workspaces, tabs] = await Promise.all([listMyWorkspaces(), getNavTabs(ctx.workspace.id)]);
+    const [workspaces, tabs, ai] = await Promise.all([listMyWorkspaces(), getNavTabs(ctx.workspace.id), getAiStatus(ctx.workspace.id)]);
     // The phone tab bar fits four sections plus More; the rest are listed here so none are out of reach.
     const nav = getEnabledNav(ctx.workspace.slug, ctx.modules, Object.fromEntries(tabs.map((t) => [t.tab, t.shown])), ctx.role);
     const overflow = nav.length > 5 ? nav.slice(4, -1) : [];
@@ -181,16 +183,18 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </span>
         </Link>
 
-        <Link
-          href={`/${ctx.workspace.slug}/settings/ai`}
-          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
-        >
-          <Sparkles className="size-5 text-primary" aria-hidden />
-          <span className="flex-1">
-            AI helper
-            <span className="block text-sm font-normal text-muted-foreground">Ask questions and read receipts. Off until you switch it on</span>
-          </span>
-        </Link>
+        {!ai.enabled && (
+          <Link
+            href={`/${ctx.workspace.slug}/settings/ai`}
+            className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+          >
+            <MikoAvatar className="size-6" />
+            <span className="flex-1">
+              Miko is switched off
+              <span className="block text-sm font-normal text-muted-foreground">Switch Miko, your AI helper, back on</span>
+            </span>
+          </Link>
+        )}
 
         </div>
 

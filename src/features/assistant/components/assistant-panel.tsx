@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MikoAvatar } from "@/features/onboarding/components/miko";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -103,7 +104,10 @@ export function AssistantPanel({ slug, used: initialUsed, limit }: { slug: strin
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            {used} of {limit} AI requests used this month
+            {used} of {limit} AI requests used this month.{" "}
+            <Link href={`/${slug}/settings/ai`} className="underline underline-offset-4">
+              Miko settings
+            </Link>
           </p>
         </form>
       </SheetContent>

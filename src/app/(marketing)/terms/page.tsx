@@ -47,7 +47,7 @@ export default function TermsPage() {
 
       <h2>The AI helper</h2>
       <p>
-        The AI helper is optional and off until an owner switches it on. Its answers can be wrong: check anything that matters before you rely on it. It can only read your records and cannot change, send or delete anything.
+        Miko, the AI helper, is on for every business unless an owner or admin switches it off. Its answers can be wrong: check anything that matters before you rely on it. It can only read your records and cannot change, send or delete anything.
       </p>
 
       <h2>Acceptable use</h2>

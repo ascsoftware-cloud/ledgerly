@@ -24,6 +24,28 @@ test.describe("offline", () => {
     if (hasAdminKey) await cleanUp(created);
   });
 
+  test("the Install button appears on More even if the browser offered installation earlier, on another page", async ({ page }) => {
+    const owner = await signIn(page, testEmail("pwainstall"), "/welcome", "Ines Install");
+    created.push(owner);
+    await expect(page).toHaveURL(/\/ines-[0-9a-f]{4}$/, { timeout: 15_000 });
+    // The browser's offer arrives a little after the page has loaded, while the person is on the home page. Offer it
+    // until the page has taken it (its listener is attached when the app finishes loading).
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const e = new Event("beforeinstallprompt", { cancelable: true });
+          (e as Event & { prompt: () => Promise<void> }).prompt = async () => undefined;
+          window.dispatchEvent(e);
+          return e.defaultPrevented;
+        }),
+      )
+      .toBe(true);
+    // They then open More without reloading.
+    await page.getByRole("link", { name: "More" }).first().click();
+    await expect(page.getByRole("heading", { level: 1, name: "More" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Install the app" })).toBeVisible();
+  });
+
   test("pages you opened still read offline, others say so, and sign-out forgets them", async ({ page, context }) => {
     const owner = await signIn(page, testEmail("pwa"), "/welcome", "Pule Offline");
     created.push(owner);

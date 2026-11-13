@@ -126,3 +126,7 @@ export function InstallButton() {
   if (ios) return <p className="text-sm text-muted-foreground">To install on iPhone: tap the Share button, then “Add to Home Screen”.</p>;
   return null;
 }
+
+// The browser offers installation once, soon after the page loads. Listen from the moment this file loads (every
+// signed-in page does), not only once the More page opens, or the offer would be missed.
+wireInstall();

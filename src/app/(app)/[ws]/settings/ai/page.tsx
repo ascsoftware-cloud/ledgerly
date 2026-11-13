@@ -7,7 +7,7 @@ import { AiSwitch } from "@/features/assistant/components/ai-switch";
 import { getAiStatus } from "@/features/assistant/queries";
 import { requireWorkspace } from "@/lib/workspace";
 
-export const metadata: Metadata = { title: "AI helper", robots: { index: false } };
+export const metadata: Metadata = { title: "Miko, your AI helper", robots: { index: false } };
 
 export default function AiSettingsPage({ params }: PageProps<"/[ws]/settings/ai">) {
   return (
@@ -27,9 +27,9 @@ async function AiSettings({ params }: { params: PageProps<"/[ws]/settings/ai">["
       <Link href={`/${ws}/more`} className="inline-flex h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden /> More
       </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">AI helper</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Miko, your AI helper</h1>
       <p className="text-sm text-muted-foreground">
-        Miko, our meerkat, answers questions about your business in plain English and reads a receipt photo into an expense. Miko is off until you switch it on.
+        Miko, our meerkat, answers questions about your business in plain English and reads a receipt photo into an expense. Miko is on for every business, and an owner or admin can switch it off here at any time.
       </p>
 
       <section aria-labelledby="control-heading" className="space-y-3 rounded-2xl border bg-card p-5 shadow-card">

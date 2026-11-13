@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         <li>To provide Ledgerly to you and your team: that is our contract with you.</li>
         <li>To keep it secure, prevent abuse and fix faults: our legitimate interest, and yours.</li>
         <li>To send what you ask for: invoices, reminders, sign-in links and notifications.</li>
-        <li>Only if you switch it on: Miko, the AI helper. Your question (everything you type) and the client names and amounts needed to answer it go to our AI provider. Miko is built not to look up client email addresses, phone numbers or addresses, but anything you type yourself, or show in a receipt photo you ask it to read, is sent. You can switch it off at any time.</li>
+        <li>Miko, the AI helper, which is on for every business unless an owner or admin switches it off. Nothing is sent until someone asks Miko a question or asks it to read a receipt photo. Your question (everything you type) and the client names and amounts needed to answer it go to our AI provider. Miko is built not to look up client email addresses, phone numbers or addresses, but anything you type yourself, or show in a receipt photo you ask it to read, is sent. An owner or admin can switch Miko off at any time.</li>
       </ul>
       <p>We do not sell personal information, and we do not use it for advertising.</p>
 
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         <li>Google: sign-in, if you choose it.</li>
         <li>PayFast: Pro subscription payments. It receives the business owner&apos;s email address and first name. Businesses also connect their own PayFast, Yoco or Stitch accounts, which pay the business directly.</li>
         <li>Apps you connect (Xero, Sage, Shopify, Courier Guy): they receive the information you choose to send to them, and only after you connect them.</li>
-        <li>Groq: Miko, the AI helper, only when switched on for your business. According to Groq&apos;s published terms (checked in November 2026), it does not keep requests or train on them by default.</li>
+        <li>Groq: Miko, the AI helper, when someone in your business uses it. According to Groq&apos;s published terms (checked in November 2026), it does not keep requests or train on them by default.</li>
         <li>Your browser&apos;s push service (Apple, Google or Mozilla), only if you turn on push.</li>
         <li>An error-reporting service, if we switch one on: it receives the error type, a message with email addresses and long codes removed, and the page address with link codes hidden. We do not send request contents, and we cannot promise every personal detail in an error message is caught.</li>
       </ul>
