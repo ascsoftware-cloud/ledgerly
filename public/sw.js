@@ -8,6 +8,7 @@ const PAGES = "ledgerly-pages-" + VERSION;
 const STATIC = "ledgerly-static-" + VERSION;
 const OFFLINE = "/offline";
 const MAX_PAGES = 60;
+const MAX_FILES = 300;
 const PRIVATE_PREFIXES = ["/api/", "/login", "/auth", "/portal", "/p/", "/invite", "/book", "/styleguide", "/offline"];
 
 function isPrivate(pathname) {
@@ -36,20 +37,32 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "clear") event.waitUntil(caches.delete(PAGES));
 });
 
-async function trim(cache) {
-  const keys = await cache.keys();
-  for (let i = 0; i < keys.length - MAX_PAGES; i++) await cache.delete(keys[i]);
+// Oldest first. The offline page is never dropped.
+async function trim(cache, max) {
+  const keys = (await cache.keys()).filter((k) => new URL(k.url).pathname !== OFFLINE);
+  for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+}
+
+async function save(cache, key, res) {
+  await cache.delete(key); // re-saving moves it to the "most recent" end
+  await cache.put(key, res.clone());
 }
 
 async function page(request) {
   try {
     const res = await fetch(request);
-    if (res.ok && !res.redirected) {
-      const cache = await caches.open(PAGES);
-      const key = request.url;
-      await cache.delete(key); // re-saving moves it to the "most recent" end
-      await cache.put(key, res.clone());
-      await trim(cache);
+    if (res.ok) {
+      // A redirect (opening the app at "/") is saved under the page it landed on, and under the address asked for,
+      // unless it landed somewhere private such as sign-in.
+      let landed = request.url;
+      if (res.redirected) landed = res.url || "";
+      const u = landed ? new URL(landed) : null;
+      if (u && u.origin === self.location.origin && !isPrivate(u.pathname)) {
+        const cache = await caches.open(PAGES);
+        await save(cache, landed, res);
+        if (res.redirected && request.url !== landed) await save(cache, request.url, res);
+        await trim(cache, MAX_PAGES);
+      }
     }
     return res;
   } catch {
@@ -65,7 +78,10 @@ async function file(request) {
   const hit = await cache.match(request.url);
   if (hit) return hit;
   const res = await fetch(request);
-  if (res.ok) await cache.put(request.url, res.clone());
+  if (res.ok) {
+    await cache.put(request.url, res.clone());
+    await trim(cache, MAX_FILES);
+  }
   return res;
 }
 

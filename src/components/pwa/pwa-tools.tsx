@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { Download, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { removeDevicePush } from "@/features/notifications/actions";
 
 /** Forgets the saved copies of pages. Called at sign-out so the next person on this device sees none. */
 export async function clearOfflineCopies(): Promise<void> {
@@ -15,12 +16,36 @@ export async function clearOfflineCopies(): Promise<void> {
   }
 }
 
+/** Stops this device receiving the signed-in person's push alerts. Called at sign-out, while the session still exists. */
+export async function forgetPushOnThisDevice(): Promise<void> {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await removeDevicePush(sub.endpoint);
+    await sub.unsubscribe();
+  } catch {
+    // No push on this device, or offline: nothing to stop.
+  }
+}
+
 /** Registers the service worker in the real app (not in development, where cached pages only confuse). */
-export function ServiceWorkerRegister() {
+export function ServiceWorkerRegister({ userId }: { userId?: string }) {
   useEffect(() => {
+    // Pages saved for someone else are never shown to the next person on this device.
+    if (userId) {
+      try {
+        const key = "ledgerly-cache-user";
+        const previous = localStorage.getItem(key);
+        if (previous && previous !== userId) void clearOfflineCopies();
+        localStorage.setItem(key, userId);
+      } catch {
+        // Storage blocked: sign-out still clears the copies.
+      }
+    }
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
+  }, [userId]);
   return null;
 }
 

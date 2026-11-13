@@ -37,13 +37,15 @@ export async function setPref(slug: string, kind: string, enabled: boolean, push
 export async function savePushSubscription(slug: string, sub: PushSubscriptionInput, userAgent: string): Promise<{ ok: boolean }> {
   const parsed = pushSubscriptionSchema.safeParse(sub);
   if (!parsed.success) return { ok: false };
-  const ctx = await requireWorkspace(slug);
+  await requireWorkspace(slug);
   const supabase = await createServerClient();
-  // Re-subscribing the same device replaces its row (people cannot update subscriptions, only add and remove them).
-  await supabase.from("push_subscriptions").delete().eq("endpoint", parsed.data.endpoint).eq("user_id", ctx.user.id);
-  const { error } = await supabase
-    .from("push_subscriptions")
-    .insert({ user_id: ctx.user.id, endpoint: parsed.data.endpoint, p256dh: parsed.data.keys.p256dh, auth: parsed.data.keys.auth, user_agent: userAgent.slice(0, 300) });
+  // A device belongs to whoever subscribes on it: the database moves the row if someone else had it.
+  const { error } = await supabase.rpc("save_push_subscription", {
+    p_endpoint: parsed.data.endpoint,
+    p_p256dh: parsed.data.keys.p256dh,
+    p_auth: parsed.data.keys.auth,
+    p_user_agent: userAgent.slice(0, 300),
+  });
   return { ok: !error };
 }
 
@@ -52,5 +54,16 @@ export async function removePushSubscription(slug: string, endpoint: string): Pr
   const ctx = await requireWorkspace(slug);
   const supabase = await createServerClient();
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", ctx.user.id);
+  return { ok: !error };
+}
+
+/** Called at sign-out, before the session ends: this device stops receiving the signed-out person's alerts. */
+export async function removeDevicePush(endpoint: string): Promise<{ ok: boolean }> {
+  if (typeof endpoint !== "string" || !endpoint.startsWith("https://")) return { ok: false };
+  const supabase = await createServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const uid = data?.claims?.sub;
+  if (!uid) return { ok: false };
+  const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", uid);
   return { ok: !error };
 }

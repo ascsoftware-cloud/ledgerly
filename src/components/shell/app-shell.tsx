@@ -37,6 +37,7 @@ export function AppShell({
   titleHref,
   quickAdd = [],
   bell,
+  userId,
   children,
 }: {
   nav: NavItem[];
@@ -46,8 +47,10 @@ export function AppShell({
   titleHref?: string;
   /** Shortcuts behind the "+" button. Empty for read-only roles. */
   quickAdd?: QuickAddItem[];
-  /** The notification bell, shown in the top corner. */
+  /** The search, Ask and notification buttons, in a row above the page. */
   bell?: ReactNode;
+  /** The signed-in person, so saved offline pages from someone else are dropped. */
+  userId?: string;
   children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(
@@ -77,12 +80,12 @@ export function AppShell({
       <Sidebar items={nav} title={title} titleHref={titleHref} collapsed={collapsed} onToggle={toggle} quickAdd={quickAdd} />
       <main id="main" className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-10">
         <div className="mx-auto w-full max-w-5xl">
+          {bell && <div className="mb-3 flex items-center justify-end gap-2 print:hidden">{bell}</div>}
           <OfflineBanner />
           {children}
         </div>
       </main>
-      <ServiceWorkerRegister />
-      {bell && <div className="fixed top-3 right-3 z-40 flex items-center gap-2 print:hidden">{bell}</div>}
+      <ServiceWorkerRegister userId={userId} />
       <QuickAdd items={quickAdd} variant="fab" />
       <BottomTabs items={nav} />
     </div>

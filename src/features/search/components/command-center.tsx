@@ -35,6 +35,7 @@ export function CommandCenter({ slug, nav, canCreate }: { slug: string; nav: Nav
         e.preventDefault();
         clear();
         setSearchOpen((o) => !o);
+        setQ("");
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey || e.key.length > 1 && e.key !== "Escape") return;
@@ -65,7 +66,7 @@ export function CommandCenter({ slug, nav, canCreate }: { slug: string; nav: Nav
     if (term.length < 2) return;
     let stale = false;
     const t = setTimeout(async () => {
-      const found = await searchWorkspace(slug, term);
+      const found = await searchWorkspace(slug, term).catch(() => []);
       if (!stale) {
         setHits({ q: term, list: found });
         setActive(0);
@@ -85,7 +86,7 @@ export function CommandCenter({ slug, nav, canCreate }: { slug: string; nav: Nav
 
   return (
     <>
-      <Button variant="outline" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)} className="rounded-full bg-card shadow-card">
+      <Button variant="outline" size="icon" aria-label="Search" onClick={() => setSearchOpen(true)} className="size-11 rounded-full bg-card shadow-card">
         <Search className="size-5" aria-hidden />
       </Button>
 

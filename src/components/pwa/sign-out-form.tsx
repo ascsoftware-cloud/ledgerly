@@ -3,13 +3,14 @@
 import { LogOut } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { signOut } from "@/features/auth/actions";
-import { clearOfflineCopies } from "./pwa-tools";
+import { clearOfflineCopies, forgetPushOnThisDevice } from "./pwa-tools";
 
-/** Signs out, and first forgets the pages saved for offline reading on this device. */
+/** Signs out, and first forgets this device's push alerts and the pages saved for offline reading. */
 export function SignOutForm() {
   return (
     <form
       action={async () => {
+        await forgetPushOnThisDevice();
         await clearOfflineCopies();
         await signOut();
       }}

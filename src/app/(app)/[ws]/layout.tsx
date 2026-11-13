@@ -41,6 +41,7 @@ async function WorkspaceFrame({
   return (
     <AppShell
       nav={nav}
+      userId={ctx.user.id}
       bell={
         <>
           <CommandCenter slug={ctx.workspace.slug} nav={nav.map((n) => ({ key: n.key, href: n.href }))} canCreate={ctx.role !== "accountant"} />

@@ -6,7 +6,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireWorkspace } from "@/lib/workspace";
 import { getProvider } from "@/server/ai/provider";
-import { friendlyAiError, giveBackAi, runAssistant, takeAi, type AssistantResult } from "./run";
+import { giveBackAi, takeAi } from "@/server/ai/allowance";
+import { friendlyAiError, runAssistant, type AssistantResult } from "./run";
 import { askSchema, receiptToForm } from "./schema";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -38,15 +39,14 @@ export async function scanReceipt(slug: string, form: FormData): Promise<ScanRes
   if (!provider) return { status: "error", message: "The AI helper isn't set up on this server yet." };
   if (!(await rateLimit("ai-user", ctx.user.id, 10, 60))) return { status: "error", message: "That's a lot at once. Please wait a minute." };
 
-  const db = await createServerClient();
-  const t = await takeAi(db, ctx.workspace.id, "receipt");
+  const t = await takeAi(ctx.workspace.id, ctx.user.id, "receipt");
   if (!t.ok) return { status: "error", message: t.message };
 
   let raw: string;
   try {
     raw = await provider.extractReceipt({ base64: Buffer.from(await file.arrayBuffer()).toString("base64"), mime: file.type });
   } catch (e) {
-    await giveBackAi(db, t.usageId).catch(() => undefined);
+    await giveBackAi(t.usageId, ctx.user.id).catch(() => undefined);
     return { status: "error", message: friendlyAiError(e) };
   }
   const r = parseReceipt(raw);

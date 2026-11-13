@@ -17,6 +17,19 @@ begin
 end
 $f$;
 
+-- Rules act only on records that become eligible from the day the rule is made (0037), so these tests make the rule
+-- "old" first; the new behaviour itself is tested in 0037_review_fixes.test.sql.
+create function pg_temp.run(p_now timestamptz) returns integer language plpgsql as $f$
+begin
+  update public.automation_rules set created_at = least(created_at, now() - interval '90 days');
+  return app.evaluate_rules(p_now);
+end
+$f$;
+-- 10:00 SAST today: client emails only go out in working hours.
+create function pg_temp.ten() returns timestamptz language sql as $f$
+  select ((now() at time zone 'Africa/Johannesburg')::date::timestamp + interval '10 hours') at time zone 'Africa/Johannesburg'
+$f$;
+
 -- A sent invoice with one R1 000 line, due `due`.
 create function pg_temp.mkinv(ws uuid, c uuid, num text, st text, due date) returns uuid language plpgsql as $f$
 declare d uuid;
@@ -67,16 +80,16 @@ begin
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action, created_by) values (ws, 'Tell me about late invoices', 'invoice_overdue', 3, 'notify_me', olga) returning id into rule;
   delete from public.notifications;
 
-  fired := app.evaluate_rules(now());
+  fired := pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga;
   r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' "notify me" fires for each overdue invoice past 3 days, not for newer, paid or draft ones (' || n || ')');
   select count(*) into n from public.notifications where kind = 'automation' and user_id in (sam, acc);
   r := r || (case when n = 0 then 'PASS' else 'FAIL' end || ' and only owners and admins are told');
   select title into t from public.notifications where kind = 'automation' and user_id = olga and title like '%INV-0001%';
   r := r || (case when t like '%5 days overdue%' then 'PASS' else 'FAIL' end || ' naming the invoice and how late it is (' || coalesce(t, 'none') || ')');
-  perform app.evaluate_rules(now());
-  perform app.evaluate_rules(now() + interval '1 hour');
-  perform app.evaluate_rules(now() + interval '2 hours');
+  perform pg_temp.run(now());
+  perform pg_temp.run(now() + interval '1 hour');
+  perform pg_temp.run(now() + interval '2 hours');
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga;
   r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' running again, hours later, fires nothing new: once per record, not once per run (' || n || ')');
   select count(*) into n from public.automation_runs where rule_id = rule and outcome = 'done';
@@ -89,11 +102,11 @@ begin
   -- a disabled rule never fires; switching it on does
   update public.automation_rules set enabled = false where id = rule;
   delete from public.automation_runs; delete from public.notifications;
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications;
   r := r || (case when n = 0 then 'PASS' else 'FAIL' end || ' a disabled rule never fires');
   update public.automation_rules set enabled = true where id = rule;
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga;
   r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' and fires once it is switched on');
 
@@ -101,8 +114,8 @@ begin
   update public.automation_rules set enabled = false where id = rule;
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws, 'Email late payers', 'invoice_overdue', 3, 'send_reminder') returning id into rule2;
   delete from public.outbox;
-  perform app.evaluate_rules(now());
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(pg_temp.ten());
+  perform pg_temp.run(pg_temp.ten());
   select count(*) into n from public.outbox where workspace_id = ws and template = 'reminder' and to_address = 'thandi@client.test' and payload ->> 'document_id' = inv::text;
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' a reminder is queued once to the client (' || n || ')');
   select payload ->> 'message' into t from public.outbox where payload ->> 'document_id' = inv::text;
@@ -117,8 +130,8 @@ begin
   -- create a task
   update public.automation_rules set enabled = false where id = rule2;
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws, 'Task to chase', 'invoice_overdue', 7, 'create_task');
-  perform app.evaluate_rules(now());
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.tasks where workspace_id = ws and title = 'Chase invoice INV-0004';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' "create task" makes one task for the invoice past 7 days (' || n || ')');
   select count(*) into n from public.tasks where workspace_id = ws and title like 'Chase invoice%';
@@ -134,7 +147,7 @@ begin
   update public.sales_documents set status = 'accepted', number = 'QUO-0002', sent_at = now() - interval '10 days' where id = q_acc;
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws, 'Nudge quotes', 'quote_unaccepted', 7, 'notify_me');
   delete from public.notifications;
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga and title like '%QUO-0001%';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' an unanswered quote after 7 days fires');
   select count(*) into n from public.notifications where kind = 'automation' and title like '%QUO-0002%';
@@ -146,16 +159,16 @@ begin
   insert into public.stock_movements (workspace_id, product_id, qty_change, reason) values (ws, prod, 4, 'initial');
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws, 'Stock alert', 'stock_below', 0, 'notify_me');
   delete from public.notifications;
-  perform app.evaluate_rules(now());
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga and title like '%Tile%';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' a product at its re-order level fires once');
   insert into public.stock_movements (workspace_id, product_id, qty_change, reason, line_id) values (ws, prod, 20, 'purchase', gen_random_uuid());
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga and title like '%Tile%';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' and stays quiet while stock is healthy');
   insert into public.stock_movements (workspace_id, product_id, qty_change, reason) values (ws, prod, -20, 'adjustment');
-  perform app.evaluate_rules(now() + interval '1 second');
+  perform pg_temp.run(now() + interval '1 second');
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga and title like '%Tile%';
   r := r || (case when n = 2 then 'PASS' else 'FAIL' end || ' but fires again after a restock and a new fall (' || n || ')');
   delete from public.automation_rules where workspace_id = ws;
@@ -170,7 +183,7 @@ begin
   insert into public.tasks (workspace_id, project_id, title, due_date, status) values (ws, proj, 'Late job', current_date - 2, 'todo'), (ws, proj, 'Done job', current_date - 2, 'done'), (ws, proj, 'Future job', current_date + 2, 'todo');
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws, 'Overdue tasks', 'task_overdue', 0, 'notify_me');
   delete from public.notifications;
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where kind = 'automation' and user_id = olga and title like '%Soon Sam%';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' a booking within 24 hours fires');
   select count(*) into n from public.notifications where kind = 'automation' and title like '%Later Lee%';
@@ -184,7 +197,7 @@ begin
   insert into public.automation_rules (workspace_id, name, trigger, threshold, action) values (ws2, 'B late', 'invoice_overdue', 1, 'notify_me');
   perform pg_temp.mkinv(ws2, c2, 'INV-0001', 'sent', current_date - 4);
   delete from public.notifications;
-  perform app.evaluate_rules(now());
+  perform pg_temp.run(now());
   select count(*) into n from public.notifications where user_id = eve and kind = 'automation';
   r := r || (case when n = 1 then 'PASS' else 'FAIL' end || ' another business''s rule fires for its own invoice only');
   select count(*) into n from public.notifications where user_id = olga and title like '%Eve client%';

@@ -32,6 +32,9 @@ export function AssistantPanel({ slug, used: initialUsed, limit }: { slug: strin
         setTurns((t) => [...t, { role: "assistant", content: r.reply }]);
         setUsed(r.used);
       } else {
+        // The question did not get an answer: take it back out of the conversation and into the box to try again.
+        setTurns(history);
+        setQuestion(q);
         setError(r.message);
       }
       endRef.current?.scrollIntoView({ block: "end" });
@@ -40,7 +43,7 @@ export function AssistantPanel({ slug, used: initialUsed, limit }: { slug: strin
 
   return (
     <Sheet>
-      <SheetTrigger render={<Button variant="outline" size="icon" aria-label="Ask Ledgerly" className="rounded-full bg-card shadow-card" />}>
+      <SheetTrigger render={<Button variant="outline" size="icon" aria-label="Ask Ledgerly" className="size-11 rounded-full bg-card shadow-card" />}>
         <Sparkles className="size-5" aria-hidden />
       </SheetTrigger>
       <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">

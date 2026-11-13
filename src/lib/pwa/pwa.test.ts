@@ -170,6 +170,25 @@ describe("the service worker: pages", () => {
     expect(await w.fire("fetch", { request: { url: "https://other.test/x", method: "GET", mode: "navigate" } })).toBeNull();
     expect(await w.fire("fetch", { request: { url: "https://app.test/acme/money?_rsc=1", method: "GET", mode: "cors" } })).toBeNull();
   });
+  test("opening the app at its front door saves the page it lands on, under both addresses", async () => {
+    const w = bootWorker();
+    await w.fire("install");
+    const landed = Object.defineProperties(new Response("workspace home"), { redirected: { value: true }, url: { value: "https://app.test/acme" } });
+    w.state.respond = () => landed;
+    await w.fire("fetch", w.nav("/"));
+    w.state.online = false;
+    expect(await (await w.fire("fetch", w.nav("/acme")))!.text()).toBe("workspace home");
+    expect(await (await w.fire("fetch", w.nav("/")))!.text()).toBe("workspace home");
+  });
+  test("a redirect to sign in is not saved under any address", async () => {
+    const w = bootWorker();
+    await w.fire("install");
+    const login = Object.defineProperties(new Response("sign in"), { redirected: { value: true }, url: { value: "https://app.test/login?next=%2Facme" } });
+    w.state.respond = () => login;
+    await w.fire("fetch", w.nav("/acme"));
+    w.state.online = false;
+    expect(await (await w.fire("fetch", w.nav("/acme")))!.text()).toBe("page https://app.test/offline");
+  });
   test("only the most recent pages are kept", async () => {
     const w = bootWorker();
     await w.fire("install");
@@ -198,6 +217,15 @@ describe("the service worker: files", () => {
     const before = w.state.fetched.length;
     expect(await (await w.fire("fetch", req))!.text()).toBe("page https://app.test/_next/static/chunks/app.js");
     expect(w.state.fetched.length).toBe(before);
+  });
+  test("saved files are capped, and the offline page is never dropped", async () => {
+    const w = bootWorker();
+    await w.fire("install");
+    for (let i = 0; i < 330; i++) await w.fire("fetch", { request: { url: `https://app.test/_next/static/chunks/c${i}.js`, method: "GET", mode: "no-cors" } });
+    const files = [...w.stores.entries()].find(([n]) => n.includes("static"))![1];
+    expect(files.size).toBeLessThanOrEqual(301); // 300 files plus the offline page
+    expect(files.has("https://app.test/offline")).toBe(true);
+    expect(files.has("https://app.test/_next/static/chunks/c329.js")).toBe(true);
   });
   test("a failed file is not kept", async () => {
     const w = bootWorker();

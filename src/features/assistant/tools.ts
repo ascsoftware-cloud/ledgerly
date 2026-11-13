@@ -39,7 +39,8 @@ export function buildTools(db: Db, workspaceId: string, today: string): Tool[] {
         if (error) throw new Error("query failed");
         const all = shapeOverdue((data ?? []) as unknown as OverdueRow[], today);
         const total = (data ?? []).reduce((t, r) => t + outstandingCents(r as unknown as OverdueRow), 0);
-        return { count: all.length, totalOwing: formatMoney(total), invoices: all.slice(0, limit) };
+        const more = (data ?? []).length >= 100;
+        return { count: all.length, totalOwing: formatMoney(total), invoices: all.slice(0, limit), ...(more ? { note: "Only the 100 oldest are counted; there may be more." } : {}) };
       },
     },
     {
@@ -105,7 +106,7 @@ export function buildTools(db: Db, workspaceId: string, today: string): Tool[] {
           .is("deleted_at", null)
           .limit(500);
         if (error) throw new Error("query failed");
-        const low = (data ?? []).filter((p) => Number(p.stock_qty) <= Number(p.reorder_level));
+        const low = (data ?? []).filter((p) => Number(p.reorder_level) > 0 && Number(p.stock_qty) <= Number(p.reorder_level));
         return { count: low.length, products: low.slice(0, 20).map((p) => ({ product: p.name, inStock: Number(p.stock_qty), reorderAt: Number(p.reorder_level) })) };
       },
     },
