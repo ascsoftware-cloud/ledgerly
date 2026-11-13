@@ -21,14 +21,14 @@ export function getCompany(env: Record<string, string | undefined> = process.env
   const registration = v("NEXT_PUBLIC_COMPANY_REG");
   const address = v("NEXT_PUBLIC_COMPANY_ADDRESS");
   const infoOfficer = v("NEXT_PUBLIC_INFO_OFFICER");
-  const dataRegion = v("NEXT_PUBLIC_DATA_REGION");
+  const dataRegion = v("NEXT_PUBLIC_DATA_REGION"); // the Supabase project is in eu-west-1 (README)
   return {
     name: name ?? TBC("company name"),
     registration: registration ?? TBC("registration number"),
     address: address ?? TBC("physical address"),
     infoOfficer: infoOfficer ?? TBC("information officer"),
     contactEmail: v("NEXT_PUBLIC_CONTACT_EMAIL") ?? "hello@ascsoftware.co.za",
-    dataRegion: dataRegion ?? TBC("hosting region"),
-    incomplete: !(name && registration && address && infoOfficer && dataRegion),
+    dataRegion: dataRegion ?? "Ireland (AWS eu-west-1)",
+    incomplete: !(name && registration && address && infoOfficer),
   };
 }

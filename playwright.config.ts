@@ -8,14 +8,18 @@ try {
 }
 
 const PORT = 3100;
+// BASE_URL points the tests at a running site (a deployed one, for the smoke test) instead of building a local one.
+const REMOTE = process.env.BASE_URL?.trim();
 
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   reporter: "list",
-  use: { baseURL: `http://localhost:${PORT}` },
+  use: { baseURL: REMOTE ?? `http://localhost:${PORT}` },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
+  webServer: REMOTE
+    ? undefined
+    : {
     command: `npm run build && npm run start -- -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,

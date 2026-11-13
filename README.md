@@ -18,6 +18,7 @@ npm run dev
 | `npm run check` | Lint, typecheck and unit tests. Must pass before any commit. |
 | `npm run e2e` | Builds the app and runs Playwright tests against it. |
 | `npm run build` | Production build. |
+| `npm run smoke` | With `BASE_URL=https://…`, a read-only health check of a running site. |
 
 ## Environment
 
@@ -35,6 +36,13 @@ Copy `.env.example` to `.env.local` and fill it in. `.env.local` is never commit
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET` | ASC's Xero app (section F). Optional |
 | `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` | ASC's Shopify app (section F). Optional |
 | `SAGE_API_KEY` | Issued by Sage to ASC (section F). Optional |
+| `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `AI_VISION_MODEL` | The AI helper (Groq). Optional: [docs/owner-setup-phase-6-7.md](docs/owner-setup-phase-6-7.md) section G |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web push notifications (section H). Optional |
+| `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`, `PAYFAST_MODE` | Ledgerly's own PayFast account for Pro subscriptions (section I). Optional |
+| `NEXT_PUBLIC_COMPANY_NAME`, `NEXT_PUBLIC_COMPANY_REG`, `NEXT_PUBLIC_COMPANY_ADDRESS`, `NEXT_PUBLIC_INFO_OFFICER` | Details shown on the legal pages (section J) |
+| `SENTRY_DSN` | Error reporting (section K). Optional |
+
+More set-up, from Phase 6 onwards (AI, push, billing, legal details, monitoring, backups, deploy): [docs/owner-setup-phase-6-7.md](docs/owner-setup-phase-6-7.md).
 
 ## Owner set-up checklist (sign-in)
 
