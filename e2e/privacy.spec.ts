@@ -33,12 +33,15 @@ test("export holds this business's data only; deleting a business has a grace pe
   await page.getByRole("link", { name: /^Your data/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your data" })).toBeVisible();
 
-  // The export is a ZIP of this business only.
+  // The export is prepared, then handed over as a short-lived link to a ZIP of this business only.
   const res = await page.request.get(`${home}/settings/data/export`);
   expect(res.status()).toBe(200);
-  expect(res.headers()["content-type"]).toBe("application/zip");
-  expect(res.headers()["content-disposition"]).toMatch(/ledgerly-priya-[0-9a-f]{4}-\d{4}-\d{2}-\d{2}\.zip/);
-  const files = unzipSync(new Uint8Array(await res.body()));
+  const { url } = (await res.json()) as { url: string };
+  expect(url).toMatch(/^https:\/\/.+\/storage\/v1\/object\/sign\/exports\//);
+  const zipRes = await page.request.get(url);
+  expect(zipRes.status()).toBe(200);
+  expect(zipRes.headers()["content-disposition"] ?? "").toMatch(/ledgerly-priya-[0-9a-f]{4}-\d{4}-\d{2}-\d{2}\.zip/);
+  const files = unzipSync(new Uint8Array(await zipRes.body()));
   const contacts = JSON.parse(strFromU8(files["data/contacts.json"]!)) as { name: string }[];
   expect(contacts.map((c) => c.name)).toEqual(["Mine Client"]);
   const everything = Object.entries(files).filter(([n]) => n.startsWith("data/")).map(([, b]) => strFromU8(b)).join("\n");
@@ -55,13 +58,13 @@ test("export holds this business's data only; deleting a business has a grace pe
   const name = (await form.locator("span.font-semibold").textContent())!.trim();
   await form.getByLabel(/Type .* to confirm/).fill(name);
   await form.getByRole("button", { name: "Delete this business" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "will be deleted on" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "will be deleted on" }).first()).toBeVisible();
   const { data: flagged } = await db.from("workspaces").select("deletion_requested_at").eq("id", mine.id).single();
   const days = (Date.now() - new Date(flagged!.deletion_requested_at as string).getTime()) / 86_400_000;
   expect(days).toBeLessThan(1);
 
   await page.getByRole("button", { name: "Keep this business" }).first().click();
-  await expect(page.getByRole("alert").filter({ hasText: "will be deleted on" })).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "will be deleted on" })).toHaveCount(0);
   const { data: cleared } = await db.from("workspaces").select("deletion_requested_at").eq("id", mine.id).single();
   expect(cleared!.deletion_requested_at).toBeNull();
 });
@@ -79,9 +82,9 @@ test("account deletion needs DELETE, waits 7 days and can be undone", async ({ p
   await expect(form.getByRole("alert")).toContainText("DELETE");
   await form.getByLabel("Type DELETE to confirm").fill("DELETE");
   await form.getByRole("button", { name: "Delete my account" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Your account will be deleted on" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Your account will be deleted on" }).first()).toBeVisible();
   await page.getByRole("button", { name: "Keep my account" }).first().click();
-  await expect(page.getByRole("alert").filter({ hasText: "Your account will be deleted on" })).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Your account will be deleted on" })).toHaveCount(0);
 });
 
 // The test server runs with this secret (playwright.config.ts); the real one lives in Vercel and Supabase Vault.

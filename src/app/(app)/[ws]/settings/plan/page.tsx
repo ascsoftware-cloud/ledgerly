@@ -79,7 +79,7 @@ async function Plan({ params, searchParams }: { params: PageProps<"/[ws]/setting
           </p>
         )}
 
-        {isOwner && plan === "free" &&
+        {isOwner && plan === "free" && paid !== "1" &&
           (page.billingOn ? (
             <UpgradeButton slug={ws} price={formatPrice(PLANS.pro.priceCents)} />
           ) : (

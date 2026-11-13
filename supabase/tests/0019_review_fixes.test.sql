@@ -102,7 +102,7 @@ begin
   r := r || (case when t = 'active' then 'PASS' else 'FAIL' end || ' a failed reconnect leaves card payments on (' || t || ')');
   y_new := public.connect_payment_provider(ws, 'yoco', 'test', null, 'sk_test_qrstuvwxyz012345', null);
   old_id := public.attach_yoco_webhook(y_new, 'wh_new', 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');
-  select string_agg(status, ',' order by created_at) into t from public.payment_connections where id in (y_old, y_new);
+  select string_agg(status, ',' order by (id = y_new)) into t from public.payment_connections where id in (y_old, y_new);
   r := r || (case when t = 'disabled,active' and old_id = y_old then 'PASS' else 'FAIL' end || ' a working new key takes over and names the old one (' || coalesce(t, 'none') || ')');
   begin
     perform public.purge_connection_secrets(y_old);

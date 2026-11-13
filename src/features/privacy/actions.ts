@@ -28,7 +28,11 @@ export async function requestWorkspaceDeletion(slug: string, typedName: unknown)
     if (!env || !token) return { ok: false, message: "Cancel Pro first (More > Plan and billing), so you are not charged again." };
     const stopped = await cancelPayfastSubscription(token, env);
     if (!stopped.ok) return { ok: false, message: "We couldn't reach PayFast to stop your subscription. Please try again in a moment." };
-    await setCancelling({ workspaceId: ctx.workspace.id });
+    try {
+      await setCancelling({ workspaceId: ctx.workspace.id });
+    } catch {
+      // PayFast has stopped charging; carry on with the deletion request.
+    }
   }
   const { data, error } = await supabase.rpc("request_workspace_deletion", { p_workspace: ctx.workspace.id });
   if (error) return { ok: false, message: FRIENDLY(error) };

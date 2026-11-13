@@ -13,7 +13,8 @@ export function parseDsn(dsn: string): { key: string; host: string; project: str
   return m ? { key: m[1]!, host: m[2]!, project: m[3]! } : null;
 }
 
-function safeRoute(path: string): string {
+/** A path with anything that looks like a link token (/p/<token>, /portal/<token>) hidden. */
+export function safeRoute(path: string): string {
   return scrubText(
     path
       .split("?")[0]!

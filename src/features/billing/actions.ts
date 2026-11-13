@@ -48,7 +48,12 @@ export async function cancelPlan(slug: string): Promise<CancelResult> {
   if (!env || !token) return { ok: false, message: "We couldn't find a subscription to cancel. If you are still being charged, cancel it in your PayFast account." };
   const stopped = await cancelPayfastSubscription(token, env);
   if (!stopped.ok) return { ok: false, message: "We couldn't reach PayFast to cancel. Please try again, or cancel it in your PayFast account." };
-  await setCancelling({ workspaceId: ctx.workspace.id });
+  try {
+    await setCancelling({ workspaceId: ctx.workspace.id });
+  } catch {
+    // PayFast has stopped charging; our own record will catch up when PayFast's cancellation notice arrives.
+    return { ok: false, message: "PayFast has cancelled your subscription, but we couldn't update this page yet. It will update in a few minutes." };
+  }
   revalidatePath(`/${slug}/settings/plan`);
   return { ok: true };
 }

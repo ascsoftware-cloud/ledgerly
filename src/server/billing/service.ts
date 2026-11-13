@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * already proved who it is: the signed-in owner (requireWorkspace) or a PayFast notification that passed all of
  * PayFast's checks. The database checks ownership and amounts again.
  */
-const OUTCOME = z.enum(["activated", "extended", "duplicate", "unknown"]);
+const OUTCOME = z.enum(["activated", "extended", "extra_subscription", "duplicate", "unknown"]);
 
 export async function startCheckout(workspaceId: string, userId: string, amountCents: number): Promise<{ ok: true; id: string } | { ok: false; message: string }> {
   try {

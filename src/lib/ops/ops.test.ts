@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildSentryEnvelope, parseDsn, redact, scrubText } from "./report";
+import { buildSentryEnvelope, parseDsn, redact, safeRoute, scrubText } from "./report";
 import { formatLog } from "./log";
 
 describe("redact", () => {
@@ -37,7 +37,26 @@ describe("redact", () => {
   });
 });
 
+describe("redact: names that only look secret", () => {
+  test("ordinary fields that contain 'pass' or 'cell' are kept, camelCase and dashed secret names are hidden", () => {
+    const out = redact({ cancelled: true, cancelling: 2, passed: 5, compass: "n", pfPaymentId: "x", accessToken: "t", user_email: "e", "x-api-key": "k", cellNumber: "1", Authorization: "b", phoneNumber: "p", failed: 1 }) as Record<string, unknown>;
+    expect(out).toMatchObject({ cancelled: true, cancelling: 2, passed: 5, compass: "n", pfPaymentId: "x", failed: 1 });
+    for (const k of ["accessToken", "user_email", "x-api-key", "cellNumber", "Authorization", "phoneNumber"]) expect(out[k]).toBe("[hidden]");
+  });
+});
+
+describe("safeRoute", () => {
+  test("hides link tokens and keeps ordinary paths, and drops the query", () => {
+    expect(safeRoute("/p/Abcdefghijklmnopqrstuvwxyz012345?x=1")).toBe("/p/:id");
+    expect(safeRoute("/portal/Abcdefghijklmnopqrstuvwxyz012345/contracts/12345678-1234-1234-1234-123456789012")).toBe("/portal/:id/contracts/:id");
+    expect(safeRoute("/acme/money")).toBe("/acme/money");
+  });
+});
+
 describe("scrubText", () => {
+  test("keeps ordinary ids (UUIDs) so errors can still be traced", () => {
+    expect(scrubText("workspace 12345678-1234-1234-1234-123456789012 not found")).toContain("12345678-1234-1234-1234-123456789012");
+  });
   test("removes emails, long tokens and bearer values from free text", () => {
     const t = scrubText("failed for thandi@example.co.za with Bearer abc.def.ghi and key tok_live_ABCDEFGHIJKLMNOPQRSTUVWX");
     expect(t).not.toContain("thandi@example.co.za");

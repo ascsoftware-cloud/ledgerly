@@ -1,10 +1,12 @@
 import "server-only";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { log } from "@/lib/ops/log";
+import { reportError } from "@/lib/ops/report";
 import { processPurge } from "./purge-core";
 
-const BUCKETS = ["receipts", "payment-proofs", "documents"] as const;
-const due = z.object({ workspaces: z.array(z.uuid()), users: z.array(z.uuid()) });
+const BUCKETS = ["receipts", "payment-proofs", "documents", "exports"] as const;
+const due = z.object({ workspaces: z.array(z.uuid()), users: z.array(z.uuid()), blocked: z.array(z.uuid()).default([]) });
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -30,7 +32,14 @@ export async function runPurge() {
   const db = createAdminClient();
   const { data, error } = await db.rpc("purge_due");
   if (error) throw new Error(`purge_due failed: ${error.code}`);
-  return processPurge(due.parse(data), {
+  const parsed = due.parse(data);
+  // A business PayFast is still charging for is never deleted: say so, so the owner can be asked to cancel.
+  if (parsed.blocked.length) {
+    log.warn("purge_blocked_by_subscription", { count: parsed.blocked.length });
+    await reportError({ error: new Error("Businesses waiting to be deleted still have an active subscription"), route: "/api/jobs/purge", method: "POST" });
+  }
+  await removeOldExports(db);
+  const result = await processPurge({ workspaces: parsed.workspaces, users: parsed.users }, {
     removeFiles: async (workspaceId) => {
       for (const bucket of BUCKETS) {
         const paths = await listAll(db, bucket, workspaceId);
@@ -49,4 +58,21 @@ export async function runPurge() {
       if (delErr) throw new Error("delete user failed");
     },
   });
+  if (result.failed > 0) {
+    log.error("purge_failures", { failed: result.failed });
+    await reportError({ error: new Error("The daily deletion job could not delete everything that was due"), route: "/api/jobs/purge", method: "POST" });
+  }
+  return { ...result, blocked: parsed.blocked.length };
+}
+
+/** Export downloads are only needed for a few minutes: anything older than a day goes. */
+async function removeOldExports(db: Db): Promise<void> {
+  const cutoff = Date.now() - 24 * 3600_000;
+  const { data: folders } = await db.storage.from("exports").list("", { limit: 100 });
+  for (const folder of folders ?? []) {
+    if (folder.id !== null) continue;
+    const { data: files } = await db.storage.from("exports").list(folder.name, { limit: 100 });
+    const old = (files ?? []).filter((f) => f.created_at && Date.parse(f.created_at) < cutoff).map((f) => `${folder.name}/${f.name}`);
+    if (old.length) await db.storage.from("exports").remove(old);
+  }
 }

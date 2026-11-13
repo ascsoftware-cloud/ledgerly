@@ -33,7 +33,7 @@ test("search engines and monitors get what they need", async ({ request }) => {
   const text = await robots.text();
   expect(text).toContain("Sitemap:");
   expect(text).toContain("Disallow: /api/");
-  expect(text).toContain("Disallow: /portal/");
+  expect(text).not.toContain("Disallow: /portal/"); // client links rely on their noindex tag, which crawlers must be allowed to read
 
   const sitemap = await request.get("/sitemap.xml");
   expect(sitemap.ok()).toBe(true);

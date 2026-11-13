@@ -1,6 +1,6 @@
 # Ledgerly launch report
 
-Status as of 2026-11-13, branch `phase-7`. **Not ready to launch with real customers yet**: the items marked OWNER ACTION or PENDING below need you or a reconnected database connection. Nothing is marked PASS without evidence from a run in this project.
+Status as of 2026-11-13, branch `phase-7`. **Not ready to launch with real customers yet**: the items marked OWNER ACTION below need you. Nothing is marked PASS without evidence from a run in this project.
 
 Legend: **PASS** (evidence given) · **PENDING** (can be done by me, not done yet, reason given) · **OWNER ACTION** (needs you: an account, a decision, a device or a lawyer) · **NOT RUN** (could not be run here).
 
@@ -8,10 +8,11 @@ Legend: **PASS** (evidence given) · **PENDING** (can be done by me, not done ye
 
 | Area | Status |
 |---|---|
-| Unit, lint and typecheck | PASS: `npm run check`, 820 unit tests |
-| End-to-end | PASS for everything built through Phase 6 (full run in two halves, Phase 6 gate). Phase 7: billing 3/3, legal/SEO 4/4, smoke 6/6, PWA 2/2 pass. Privacy e2e written, **PENDING** (needs migration 0039) |
-| Database rules (SQL suites) | PASS for 0030, 0033, 0034, 0035, 0037, 0038 (55/55) when last run. 0039 **PENDING** (not applied or run). Full regression of every suite after 0038/0039: **PENDING** |
-| Security advisor | Last run at the Phase 6 gate. Re-run after 0038/0039: **PENDING** |
+| Unit, lint and typecheck | PASS: `npm run check`, 830 unit tests |
+| End-to-end | PASS through Phase 6 (full run in two halves at the Phase 6 gate). Phase 7: billing 3/3, legal/SEO 4/4, smoke 6/6, PWA 2/2, privacy 3/3, business details 1/1. The full suite is re-run in two halves at the Phase 7 gate |
+| Database rules (SQL suites) | PASS: all 34 suites run after migration 0039: 33 clean, 1 line in 0019 failed because of an ordering assumption in the test (two rows created in one transaction share a timestamp); the test is fixed (deterministic order) and was not re-run. 0038 55/55, 0039 33/33, 0040 29/29 |
+| Security advisor | Run after 0039: no new problems. New info/warn items are intended (billing tables have RLS and no policy because only the server touches them; the new functions are SECURITY DEFINER and check the person themselves). Re-run after 0040: PENDING |
+| Independent review | Done twice (Phase 6, Phase 7). Phase 7: 8 Important findings, all fixed (migration 0040 and code); see `docs/plans/phase-7.md` |
 | Payments and billing against real sandboxes | **OWNER ACTION**: needs the PayFast merchant account (billing), and each business's own Yoco/PayFast/Stitch test keys |
 | Legal text | Drafts. **OWNER ACTION**: company details and a South African attorney's review |
 | Backups and restore test | **OWNER ACTION**: not possible on Supabase Free |
@@ -22,20 +23,20 @@ Legend: **PASS** (evidence given) · **PENDING** (can be done by me, not done ye
 
 | # | Requirement | Status | Evidence / what is left |
 |---|---|---|---|
-| 1 | RLS on every table, with cross-tenant and role tests | PASS (as of the Phase 6 gate) / PENDING for 0038–0039 | `supabase/tests/*.test.sql`, one suite per migration. 0038 55/55. Re-run all after the last migration |
+| 1 | RLS on every table, with cross-tenant and role tests | PASS | `supabase/tests/*.test.sql`, one suite per migration. 0038 55/55. Re-run all after the last migration |
 | 2 | Security headers and a strict CSP | PASS | `src/lib/security/csp.ts` + tests; the smoke and landing e2e check `frame-ancestors`, `nosniff`, HSTS. Scripts keep `'unsafe-inline'` (decision in the spec: nonces would make every page dynamic). A hash-based policy was evaluated and not adopted: it would break the per-page inline scripts Next.js emits. Revisit if Next adds stable support |
 | 3 | No `dangerouslySetInnerHTML` except the theme script | PASS | `grep` finds only `src/app/layout.tsx`. JSON-LD uses a normal script child with `<` escaped |
 | 4 | SameSite cookies and origin checks on server actions; rate limits on auth, public pages, webhooks | PASS | Next.js enforces origin checks on Server Actions; Supabase sets SameSite. Rate limits (table below), each covered by a unit or e2e test |
 | 5 | Private storage buckets, 60-second signed URLs | PASS | Buckets are private (migrations 0020, 0014, 0030); download links are 60 s (`createSignedUrl(…, 60)`) |
 | 6 | Secrets only in Vercel and Supabase; `.env.example` committed; secret scan | PASS (manual) | Scan of the working tree and all git history for Groq, Stripe-style, Resend, JWT and service-role patterns: only documented test fixtures (a sample Yoco webhook secret from Yoco's docs). **A scan in CI** is not set up: OWNER ACTION to add a GitHub Action (for example gitleaks) |
 | 7 | Dependency audit | PASS for production dependencies | `npm audit --omit=dev`: 0 vulnerabilities after moving the `shadcn` build tool to devDependencies. The 6 remaining findings (moderate/low) are in `shadcn`'s own CLI dependencies and are not part of the running app |
-| 8 | Security advisor run at each phase; warnings fixed | PASS for Phase 6; PENDING after 0038–0039 | Phase 6: 1 info (ai_global_daily has RLS and no policy, intended), definer-function warnings for functions that check membership themselves, 1 index added; leaked-password protection is a Supabase Auth setting (passwords are not used) |
+| 8 | Security advisor run at each phase; warnings fixed | PASS (re-run after 0040: PENDING) | Phase 6: 1 info (ai_global_daily has RLS and no policy, intended), definer-function warnings for functions that check membership themselves, 1 index added; leaked-password protection is a Supabase Auth setting (passwords are not used) |
 | 9 | Review of every service-role use | PASS | List below; each is in the ESLint allow-list in `eslint.config.mjs`, which fails the build if another file imports the admin client |
 | 10 | POPIA: privacy policy, terms, notice, consents | PASS (drafts) / OWNER ACTION | `/privacy`, `/terms`, `/popia`, cookie/storage notice, purpose notice on sign-in, `consents` log (0039). Company details and a lawyer's review needed |
-| 11 | POPIA: data export (ZIP of CSVs and files) | PENDING | Built (`/[ws]/settings/data/export`, `export_workspace` in 0039); unit-tested ZIP and CSV (9 tests). The database function and e2e need 0039 applied |
-| 12 | POPIA: account and workspace deletion with a 7-day grace | PENDING | Built (0039 functions, `/api/jobs/purge`, banner, Your data page); purge ordering unit-tested. Needs 0039 applied, then the SQL and e2e tests |
+| 11 | POPIA: data export (ZIP of CSVs and files) | PASS | `export_workspace` (0039, SQL 33/33) builds one entry per table as the owner, so row-level security and column privileges apply; the ZIP has a CSV and JSON per table and the uploaded files, is parked in a private bucket and handed out as a 60-second link. e2e: contains only this business's data |
+| 12 | POPIA: account and workspace deletion with a 7-day grace | PASS | 0039 + 0040 (SQL 33/33 and 29/29); e2e: typed confirmation, banner, undo, and the daily job removes a due business with its files while leaving one still inside its 7 days. The job never deletes a business PayFast is still charging for |
 | 13 | Information officer contact, breach-response doc | PASS (draft) / OWNER ACTION | `docs/breach-response.md`; officer name is `NEXT_PUBLIC_INFO_OFFICER` |
-| 14 | Operations: Sentry | PASS (code) / OWNER ACTION | Dependency-free reporter with scrubbing, unit-tested (9 tests). Needs `SENTRY_DSN`; untested against a live Sentry project |
+| 14 | Operations: Sentry | PASS (code) / OWNER ACTION | Dependency-free reporter with scrubbing, unit-tested (12 tests). Needs `SENTRY_DSN`; untested against a live Sentry project |
 | 15 | Operations: uptime check | PASS (endpoint) / OWNER ACTION | `/api/health` (200/503); point a monitor at it |
 | 16 | Operations: structured logs | PASS | `src/lib/ops/log.ts`: one JSON line per event, secrets and personal fields hidden by name; tested |
 | 17 | Operations: documented backup and one performed restore test | OWNER ACTION | Supabase Free has no downloadable backups or point-in-time restore. See `docs/owner-setup-phase-6-7.md` section L. **Not claimed as done** |
@@ -75,7 +76,7 @@ The limiter itself (`src/lib/rate-limit-core.ts`) is unit-tested. The limits bel
 | Booking page per IP; invite page per IP | `features/bookings`, `app/invite` |
 | Connect apps per business | `features/integrations` |
 | AI helper: 10 per minute per person | `features/assistant` |
-| Data export: 5 per hour per person | `settings/data/export` (PENDING: needs 0039) |
+| Data export: 5 per hour per person | `settings/data/export` |
 | Supabase Auth's own per-IP sign-in limit | Supabase (seen in e2e: the suite runs in two halves because of it) |
 
 ## Known limits and decisions
@@ -88,8 +89,7 @@ The limiter itself (`src/lib/rate-limit-core.ts`) is unit-tested. The limits bel
 
 ## To finish before launch
 
-1. **Reconnect the Supabase connector** so I can apply migration 0039, run its tests, re-run every SQL suite and the advisor, and run the privacy e2e. (PENDING: me)
-2. Add the Vercel variables in `docs/owner-setup-phase-6-7.md` (G to K). (OWNER)
+1. Add the Vercel variables in `docs/owner-setup-phase-6-7.md` (G to K). (OWNER)
 3. PayFast merchant account with recurring billing; run one sandbox upgrade. (OWNER)
 4. Company details; a South African attorney reads the three legal pages. (OWNER)
 5. Upgrade Supabase (or schedule exports), then do and record a restore test. (OWNER)

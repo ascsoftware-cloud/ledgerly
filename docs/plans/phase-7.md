@@ -43,3 +43,12 @@ Verified from the PayFast Omnipay reference implementation and PayFast's API ref
 6. **7.7 Launch report**, final review, merge.
 
 Each task: SQL test first for database rules, unit tests for pure helpers, an e2e where a journey exists, commit. Full e2e in two halves at least five minutes apart.
+
+## As built (differences from the plan above)
+
+- **Migrations:** 0038 billing, 0039 POPIA (consents, deletion, export), 0040 review fixes; each with a down script and an SQL test (55, 33 and 29 checks). All 34 suites re-run after 0039.
+- **Billing:** as planned, plus after the independent review: one open checkout per business and hour; a second PayFast subscription for the same business is recognised and cancelled at PayFast (the first stays); an owner-cancelled subscription is never brought back by a late notice; no upgrade while a deletion is pending; billing records survive a deleted business; the notice's amount is checked in the database against what that checkout or subscription costs, so changing the price later does not break existing subscribers; unknown or extra payments raise an alert instead of being dropped.
+- **Deletion and export:** export is a ZIP with a CSV and a JSON file per table plus uploaded files, parked in a private `exports` bucket and handed out as a 60-second link (removed after a day by the daily job). Deleting a business or an account waits 7 days; the daily job removes the files and rows and never deletes a business PayFast is still charging for; an account's businesses cannot be kept separately, and none can be added while the account is going.
+- **Storage cap:** now also enforced against direct Storage API uploads (policy on the three buckets), to within one file.
+- **Added at the owner's request during Phase 7:** the ASC logo (redrawn as a vector from the supplied sheet, the "Small" version) as app icons, favicon, wordmark "LEDGERLY by ASC" in the headers, sidebar and share image; the AI helper renamed **Miko**; Business details (More > Business details: name, registration number, VAT) because there was no way to edit the business name; server region moved to Dublin.
+- **Not done:** Lighthouse (blocked here), restore test (not possible on Supabase Free), PayFast sandbox run (needs the owner's merchant account), Sentry against a live project.

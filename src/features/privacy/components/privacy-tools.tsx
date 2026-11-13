@@ -102,3 +102,40 @@ export function CancelDeletionButton({ slug, which }: { slug: string; which: "bu
     </Button>
   );
 }
+
+/** Prepares the export, then downloads it. Errors are shown here instead of saving a broken file. */
+export function DownloadExportButton({ slug }: { slug: string }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="touch"
+        disabled={pending}
+        onClick={async () => {
+          setPending(true);
+          setError(null);
+          try {
+            const res = await fetch(`/${slug}/settings/data/export`, { cache: "no-store" });
+            const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+            if (!res.ok || !body.url) setError(body.error ?? "The export failed. Please try again.");
+            else window.location.assign(body.url);
+          } catch {
+            setError("The export failed. Check your connection and try again.");
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        {pending ? "Preparing your download…" : "Download my business data"}
+      </Button>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}

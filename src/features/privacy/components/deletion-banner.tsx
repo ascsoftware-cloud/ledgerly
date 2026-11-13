@@ -10,18 +10,18 @@ export function DeletionBanner({ slug, state, isOwner }: { slug: string; state: 
   return (
     <div className="mb-4 space-y-2">
       {state.workspaceOn && (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
           <p>
             This business will be deleted on {day(state.workspaceOn)}.{" "}
             <Link href={`/${slug}/settings/data`} className="underline underline-offset-4">
               Your data
             </Link>
           </p>
-          {isOwner && <CancelDeletionButton slug={slug} which="business" />}
+          {isOwner && !state.accountOn && <CancelDeletionButton slug={slug} which="business" />}
         </div>
       )}
       {state.accountOn && (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
           <p>Your account will be deleted on {day(state.accountOn)}.</p>
           <CancelDeletionButton slug={slug} which="account" />
         </div>

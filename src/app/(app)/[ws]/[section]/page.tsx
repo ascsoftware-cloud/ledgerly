@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { Bell, Blocks, CalendarClock, CreditCard, Gem, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { Bell, Blocks, Building2, CalendarClock, CreditCard, Gem, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { InstallButton } from "@/components/pwa/pwa-tools";
 import { SignOutForm } from "@/components/pwa/sign-out-form";
@@ -141,6 +141,17 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           <span className="flex-1">
             Notification settings
             <span className="block text-sm font-normal text-muted-foreground">Choose what you hear about, and turn on push</span>
+          </span>
+        </Link>
+
+        <Link
+          href={`/${ctx.workspace.slug}/settings/business`}
+          className="flex min-h-16 items-center gap-3 rounded-2xl border bg-card p-5 font-medium shadow-card hover:text-primary"
+        >
+          <Building2 className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">
+            Business details
+            <span className="block text-sm font-normal text-muted-foreground">Change your business name, registration and VAT details</span>
           </span>
         </Link>
 

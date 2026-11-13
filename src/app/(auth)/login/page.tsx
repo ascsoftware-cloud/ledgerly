@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Wordmark } from "@/components/brand/logo";
 import { PageSkeleton } from "@/components/states/page-skeleton";
 import { LoginForm } from "@/features/auth/components/login-form";
 
@@ -10,8 +11,8 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4">
       <header className="flex h-16 items-center">
-        <Link href="/" className="flex h-11 items-center text-lg font-semibold tracking-tight">
-          Ledgerly
+        <Link href="/" className="flex h-11 items-center" aria-label="Ledgerly by ASC, home">
+          <Wordmark />
         </Link>
       </header>
       <div className="flex flex-1 flex-col justify-center pb-16">

@@ -2,6 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { log } from "@/lib/ops/log";
 import { runPurge } from "@/server/privacy/run-purge";
 
+export const maxDuration = 60;
+
 /** Called daily by pg_cron (via pg_net) with the shared JOBS_SECRET, like the other jobs. */
 function authorised(req: Request): boolean {
   const secret = process.env.JOBS_SECRET;

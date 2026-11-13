@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { PageSkeleton } from "@/components/states/page-skeleton";
-import { buttonVariants } from "@/components/ui/button";
-import { CancelDeletionButton, DeleteAccountForm, DeleteBusinessForm } from "@/features/privacy/components/privacy-tools";
+import { CancelDeletionButton, DeleteAccountForm, DeleteBusinessForm, DownloadExportButton } from "@/features/privacy/components/privacy-tools";
 import { getDeletionState } from "@/features/privacy/queries";
 import { formatDate } from "@/lib/dates";
 import { requireWorkspace } from "@/lib/workspace";
@@ -41,9 +40,7 @@ async function Data({ params }: { params: PageProps<"/[ws]/settings/data">["para
           <p className="text-sm text-muted-foreground">
             A ZIP with one file for each kind of record (clients, invoices, expenses and more) and the files you uploaded. It can take a moment.
           </p>
-          <a href={`/${ws}/settings/data/export`} download className={buttonVariants({ variant: "outline", size: "touch" })}>
-            <Download className="size-5" aria-hidden /> Download my business data
-          </a>
+          <DownloadExportButton slug={ws} />
         </section>
       )}
 

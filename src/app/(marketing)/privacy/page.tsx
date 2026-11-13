@@ -42,7 +42,7 @@ export default function PrivacyPage() {
         <li>To provide Ledgerly to you and your team: that is our contract with you.</li>
         <li>To keep it secure, prevent abuse and fix faults: our legitimate interest, and yours.</li>
         <li>To send what you ask for: invoices, reminders, sign-in links and notifications.</li>
-        <li>Only if you switch it on: the AI helper, which sends your question and the figures it needs to answer it (names and amounts, never email addresses, phone numbers or addresses) to our AI provider. You can switch it off at any time.</li>
+        <li>Only if you switch it on: Miko, the AI helper. Your question (everything you type) and the client names and amounts needed to answer it go to our AI provider. Miko is built not to look up client email addresses, phone numbers or addresses, but anything you type yourself, or show in a receipt photo you ask it to read, is sent. You can switch it off at any time.</li>
       </ul>
       <p>We do not sell personal information, and we do not use it for advertising.</p>
 
@@ -53,22 +53,23 @@ export default function PrivacyPage() {
         <li>Vercel: hosting and delivery of the website and app.</li>
         <li>Resend: sending email.</li>
         <li>Google: sign-in, if you choose it.</li>
-        <li>PayFast: Pro subscription payments. Businesses also connect their own PayFast, Yoco or Stitch accounts, which pay the business directly.</li>
-        <li>Groq: the AI helper, only when switched on for your business. Groq says it does not keep requests or train on them by default.</li>
+        <li>PayFast: Pro subscription payments. It receives the business owner&apos;s email address and first name. Businesses also connect their own PayFast, Yoco or Stitch accounts, which pay the business directly.</li>
+        <li>Apps you connect (Xero, Sage, Shopify, Courier Guy): they receive the information you choose to send to them, and only after you connect them.</li>
+        <li>Groq: Miko, the AI helper, only when switched on for your business. According to Groq&apos;s published terms (checked in November 2026), it does not keep requests or train on them by default.</li>
         <li>Your browser&apos;s push service (Apple, Google or Mozilla), only if you turn on push.</li>
-        <li>An error-reporting service, if we switch one on: it receives error types and messages with personal details removed.</li>
+        <li>An error-reporting service, if we switch one on: it receives the error type, a message with email addresses and long codes removed, and the page address with link codes hidden. We do not send request contents, and we cannot promise every personal detail in an error message is caught.</li>
       </ul>
       <p>Some of these are outside South Africa. When information is sent abroad we use providers with appropriate protections, as POPIA section 72 requires.</p>
 
       <h2>How long we keep it</h2>
       <p>
-        We keep your information while your account is open. When you ask us to delete a business or your account, we keep it for 7 days in case you change your mind, then delete the records and files. Backups made by our providers expire on their own schedule. Security and billing records that the law requires us to keep may be kept for as long as the law says.
+        We keep your information while your account is open. When you ask us to delete a business or your account, we keep it for 7 days in case you change your mind, then delete the records and files in our next nightly clean-up (so within about 8 days). Backups made by our providers expire on their own schedule. Records of payments you made to us for Pro are kept, without your business attached, for as long as the law requires us to keep accounting records.
       </p>
 
       <h2>How we protect it</h2>
       <ul>
         <li>Every business&apos;s data is separated by the database itself, not just by the app, and this is tested.</li>
-        <li>Sign-in is passwordless (Google or an emailed link), so there is no password to steal.</li>
+        <li>Sign-in is passwordless (Google, or a code or link we email you), so there is no password to steal.</li>
         <li>Files are private and only reachable through short-lived links.</li>
         <li>Connections are encrypted.</li>
       </ul>
