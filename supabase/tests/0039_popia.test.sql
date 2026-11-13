@@ -104,7 +104,7 @@ begin
   r := r || (case when t not like 'ERR:%' and t::timestamptz between now() + interval '6 days 23 hours' and now() + interval '7 days 1 hour' then 'PASS' else 'FAIL' end || ' the owner can, and it is 7 days away (' || t || ')');
   r := r || (case when (public.purge_due() -> 'workspaces') = '[]'::jsonb then 'PASS' else 'FAIL' end || ' nothing is due yet');
   update public.workspaces set deletion_requested_at = now() - interval '8 days' where id = ws;
-  r := r || (case when (public.purge_due() -> 'workspaces') @> to_jsonb(ws::text)::jsonb or (public.purge_due() -> 'workspaces') @> jsonb_build_array(ws) then 'PASS' else 'FAIL' end || ' after the grace it is due');
+  r := r || (case when (public.purge_due() -> 'workspaces') @> jsonb_build_array(ws) then 'PASS' else 'FAIL' end || ' after the grace it is due');
   r := r || (case when pg_temp.probe('authenticated', olga, 'select public.purge_due()') = -1 then 'PASS' else 'FAIL' end || ' and only the server can ask what is due');
   perform pg_temp.as_user(olga, format($q$select public.cancel_workspace_deletion('%s')::text$q$, ws));
   select count(*) into n from public.workspaces where id = ws and deletion_requested_at is null;

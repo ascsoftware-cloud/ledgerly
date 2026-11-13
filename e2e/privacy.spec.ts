@@ -66,13 +66,11 @@ test("export holds this business's data only; deleting a business has a grace pe
   expect(cleared!.deletion_requested_at).toBeNull();
 });
 
-test("account deletion needs DELETE, waits 7 days and can be undone; the daily job removes only what is due, files included", async ({ page, request }) => {
+test("account deletion needs DELETE, waits 7 days and can be undone", async ({ page }) => {
   const owner = await signIn(page, testEmail("privacct"), "/welcome", "Asha Account");
   created.push(owner);
   await expect(page).toHaveURL(/\/asha-[0-9a-f]{4}$/, { timeout: 15_000 });
   const home = new URL(page.url()).pathname;
-  const mine = await workspaceOf(owner);
-  const db = admin();
 
   await page.goto(`${home}/settings/data`);
   const form = page.getByRole("form", { name: "Delete my account" });
@@ -84,21 +82,32 @@ test("account deletion needs DELETE, waits 7 days and can be undone; the daily j
   await expect(page.getByRole("alert").filter({ hasText: "Your account will be deleted on" })).toBeVisible();
   await page.getByRole("button", { name: "Keep my account" }).first().click();
   await expect(page.getByRole("alert").filter({ hasText: "Your account will be deleted on" })).toHaveCount(0);
+});
 
-  // The job: a business whose 7 days are over goes, with its files; one still waiting stays.
-  const secret = process.env.JOBS_SECRET;
-  test.skip(!secret || secret.length < 32, "Set JOBS_SECRET (32+ characters) in .env.local to test the daily job");
+// The test server runs with this secret (playwright.config.ts); the real one lives in Vercel and Supabase Vault.
+const SECRET = "e2e-only-jobs-secret-0123456789abcdef";
+
+test("the daily job removes only what is due, files included, and refuses callers without the secret", async ({ page, request }) => {
+  const owner = await signIn(page, testEmail("privjob"), "/welcome", "Jobe Purge");
+  created.push(owner);
+  await expect(page).toHaveURL(/\/jobe-[0-9a-f]{4}$/, { timeout: 15_000 });
+  const mine = await workspaceOf(owner);
+  const db = admin();
+  const keep = await db.from("workspaces").insert({ slug: `keep-${Date.now().toString(36)}`, name: "Keeps", created_by: owner, deletion_requested_at: new Date(Date.now() - 2 * 86_400_000).toISOString() }).select("id").single();
   const path = `${mine.id}/proofs/${crypto.randomUUID()}.txt`;
-  const up = await db.storage.from("documents").upload(path, new Blob(["hello"]), { contentType: "text/plain" });
+  const up = await db.storage.from("documents").upload(path, Buffer.from("hello"), { contentType: "text/plain" });
   expect(up.error).toBeNull();
   await db.from("workspaces").update({ deletion_requested_at: new Date(Date.now() - 8 * 86_400_000).toISOString(), deletion_requested_by: owner }).eq("id", mine.id);
   const refused = await request.post("/api/jobs/purge", { headers: { Authorization: "Bearer wrong" } });
   expect(refused.status()).toBe(401);
-  const run = await request.post("/api/jobs/purge", { headers: { Authorization: `Bearer ${secret}` } });
+  const run = await request.post("/api/jobs/purge", { headers: { Authorization: `Bearer ${SECRET}` } });
   expect(run.status()).toBe(200);
   expect((await run.json()).workspaces).toBeGreaterThanOrEqual(1);
   const { data: gone } = await db.from("workspaces").select("id").eq("id", mine.id);
   expect(gone).toEqual([]);
   const { data: remaining } = await db.storage.from("documents").list(mine.id);
   expect(remaining ?? []).toEqual([]);
+  // A business still inside its 7 days is left alone.
+  const { data: kept } = await db.from("workspaces").select("id").eq("id", keep.data!.id);
+  expect(kept).toHaveLength(1);
 });

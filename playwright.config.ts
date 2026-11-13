@@ -26,6 +26,6 @@ export default defineConfig({
     timeout: 240_000,
     // Tests never send real email.
     // PayFast sandbox demo values (public, from PayFast's documentation): nothing here can charge anyone.
-    env: { EMAIL_TRANSPORT: "log", AI_PROVIDER: "mock", PAYFAST_MERCHANT_ID: "10000100", PAYFAST_MERCHANT_KEY: "46f0cd694581a", PAYFAST_PASSPHRASE: "e2e-test-passphrase", PAYFAST_MODE: "sandbox" },
+    env: { EMAIL_TRANSPORT: "log", AI_PROVIDER: "mock", PAYFAST_MERCHANT_ID: "10000100", PAYFAST_MERCHANT_KEY: "46f0cd694581a", PAYFAST_PASSPHRASE: "e2e-test-passphrase", PAYFAST_MODE: "sandbox", JOBS_SECRET: "e2e-only-jobs-secret-0123456789abcdef" },
   },
 });
