@@ -48,7 +48,10 @@ test("a payment appears live in the bell, can be read, and a switched-off kind s
   // Settings: switch the kind off; the next payment says nothing.
   await page.getByRole("link", { name: "Notification settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Notification settings" })).toBeVisible();
-  await expect(page.getByText(/Push notifications are not switched on for this site yet|can't receive push/)).toBeVisible();
+  // Which one shows depends on the environment: no VAPID key, a browser without push, or push ready to switch on.
+  await expect(
+    page.getByText(/Push notifications are not switched on for this site yet|can't receive push/).or(page.getByRole("button", { name: /notifications on this device/ })),
+  ).toBeVisible();
   const row = page.getByRole("list", { name: "Notification kinds" }).getByRole("listitem").filter({ hasText: "Payment received" });
   await row.getByRole("checkbox").first().uncheck();
   await expect(row.getByRole("checkbox").nth(1)).toBeDisabled();
