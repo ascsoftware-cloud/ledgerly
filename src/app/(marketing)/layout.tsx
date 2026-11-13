@@ -10,9 +10,11 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             Ledgerly
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1">
-            <Link href="/pricing" className={buttonVariants({ variant: "ghost", size: "touch", className: "px-3" })}>
-              Pricing
-            </Link>
+            <span className="hidden sm:block">
+              <Link href="/pricing" className={buttonVariants({ variant: "ghost", size: "touch", className: "px-3" })}>
+                Pricing
+              </Link>
+            </span>
             <Link
               href="/login"
               prefetch={false}
@@ -34,6 +36,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <p>Ledgerly. Made in South Africa.</p>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-2">
             {[
+              ["Pricing", "/pricing"],
               ["Privacy", "/privacy"],
               ["Terms", "/terms"],
               ["POPIA", "/popia"],
