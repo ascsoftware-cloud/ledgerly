@@ -16,13 +16,13 @@ export function LogoMark({ className = "size-8", plain = false, ...rest }: { cla
 }
 
 /** "LEDGERLY" with a much smaller "by ASC" beneath it, on the right. */
-export function Wordmark({ className = "", mark = true, markClass = "size-8" }: { className?: string; mark?: boolean; markClass?: string }) {
+export function Wordmark({ className = "", mark = true, markClass = "size-7 sm:size-8" }: { className?: string; mark?: boolean; markClass?: string }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`} aria-label="Ledgerly by ASC">
       {mark && <LogoMark className={markClass} />}
       <span aria-hidden className="flex flex-col leading-none">
-        <span className="text-lg font-bold tracking-[0.18em]">LEDGERLY</span>
-        <span className="mt-0.5 self-end text-[0.6rem] font-medium tracking-[0.28em] opacity-70">by ASC</span>
+        <span className="text-sm font-bold tracking-[0.12em] sm:text-lg sm:tracking-[0.18em]">LEDGERLY</span>
+        <span className="mt-0.5 self-end text-[0.55rem] font-medium tracking-[0.24em] opacity-70 sm:text-[0.6rem] sm:tracking-[0.28em]">by ASC</span>
       </span>
     </span>
   );

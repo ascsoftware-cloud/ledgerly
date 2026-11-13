@@ -52,6 +52,9 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
               </li>
             ))}
           </ul>
+          <div className="mt-3 border-t pt-3">
+            <InstallButton />
+          </div>
         </section>
 
         {overflow.length > 0 && (
@@ -71,6 +74,7 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </section>
         )}
 
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {(ctx.role === "owner" || ctx.role === "admin") && (
           <Link
             href={`/${ctx.workspace.slug}/settings/payments`}
@@ -188,6 +192,8 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           </span>
         </Link>
 
+        </div>
+
         <NavTabs slug={ctx.workspace.slug} tabs={tabs} canChange={ctx.role === "owner" || ctx.role === "admin"} />
 
         <section aria-labelledby="account-heading" className="rounded-2xl border bg-card p-5 shadow-card">
@@ -197,12 +203,7 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
           <p className="mt-2 font-medium">{ctx.user.email}</p>
           <p className="text-sm text-muted-foreground capitalize">{ctx.role}</p>
           <SignOutForm />
-          <div className="mt-3">
-            <InstallButton />
-          </div>
         </section>
-
-        <p className="text-sm text-muted-foreground">Settings, team and billing arrive in later updates.</p>
       </div>
     );
   }
