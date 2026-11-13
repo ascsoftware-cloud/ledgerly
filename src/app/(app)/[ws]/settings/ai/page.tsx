@@ -29,7 +29,7 @@ async function AiSettings({ params }: { params: PageProps<"/[ws]/settings/ai">["
       </Link>
       <h1 className="text-2xl font-semibold tracking-tight">AI helper</h1>
       <p className="text-sm text-muted-foreground">
-        Ask questions about your business in plain English, and read a receipt photo into an expense. It is off until you switch it on.
+        Miko, our meerkat, answers questions about your business in plain English and reads a receipt photo into an expense. Miko is off until you switch it on.
       </p>
 
       <section aria-labelledby="control-heading" className="space-y-3 rounded-2xl border bg-card p-5 shadow-card">
