@@ -80,6 +80,21 @@ export function verifyOAuthCallback(params: URLSearchParams, clientSecret: strin
   return safeEqual(Buffer.from(given.toLowerCase(), "hex"), expected);
 }
 
+/**
+ * The request Shopify sends to the App URL when a merchant installs (or opens) the app: `shop`, `timestamp`, `host`
+ * and an `hmac` signed like the OAuth callback. Returns the store's address only for a genuine, recent request for a
+ * real myshopify.com store (within an hour, so a replayed link goes nowhere).
+ */
+export function installRequestShop(params: URLSearchParams, clientSecret: string, now: Date = new Date()): string | null {
+  if (!verifyOAuthCallback(params, clientSecret)) return null;
+  const ts = Number(params.get("timestamp"));
+  if (!Number.isInteger(ts)) return null;
+  const age = Math.floor(now.getTime() / 1000) - ts;
+  if (age < -300 || age > 3600) return null;
+  const shop = params.get("shop") ?? "";
+  return isShopDomain(shop) ? shop : null;
+}
+
 /** Webhooks: X-Shopify-Hmac-SHA256 is base64 HMAC-SHA256 of the raw body, keyed with the client secret. */
 export function verifyWebhook(
   rawBody: string,

@@ -46,6 +46,7 @@ Spec lines this changes. Tiaan approved building all five; Greg should review th
 8. **Addresses.** `contacts.address` is one free-text field (max 500). Courier Guy needs structured addresses, so each shipment stores its own structured collection and delivery address, prefilled from the contact. The contacts schema is not changed.
 9. **Service-role boundary.** New webhook handlers live under `src/app/api/webhooks/**`, already allowed. The integrations job route is added to the allow-list in `eslint.config.mjs` (lines 10 and 30) by name. The rule is not loosened.
 10. **UI home:** `/[ws]/settings/integrations`, owner and admin only, next to the existing payments page. Shopify dashboard at `/[ws]/shop`, enabled by a new `workspace_modules` key `shop`.
+11. **Installing from Shopify (public distribution).** Shopify sends a merchant who installs the app to the App URL, `<site>/auth/shopify`, with a signed query (`shop`, `timestamp`, `hmac`) but no Ledgerly session. That route checks the signature (same HMAC as the OAuth callback), refuses requests older than an hour or from the future and any host that is not `*.myshopify.com`, then redirects to `/auth/shopify/connect?shop=…`. The connect page requires sign-in (back to it afterwards via `next`), lists the businesses the person owns or administers, and links each to `/api/oauth/shopify/start?ws=&shop=`, which is the existing state-cookie OAuth flow. Nothing is saved until the callback passes its own HMAC and state check.
 
 ## 4. Data model (new migrations, each with a down script)
 
