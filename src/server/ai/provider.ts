@@ -4,7 +4,8 @@ import { createMockProvider } from "@/lib/ai/mock";
 import type { AiProvider } from "@/lib/ai/types";
 
 // Groq model names change; these are starting points, not verified without a key. Override with AI_MODEL / AI_VISION_MODEL.
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile was retired Aug 2026; openai/gpt-oss-120b is a current tool-capable model.
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 const DEFAULT_VISION_MODEL = "qwen/qwen3.8-27b";
 
 /** null when no provider is configured: the app then says the helper is not set up instead of failing. */
