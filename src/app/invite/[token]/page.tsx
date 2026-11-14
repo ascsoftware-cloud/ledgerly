@@ -34,6 +34,7 @@ async function Invite({ params }: { params: PageProps<"/invite/[token]">["params
   const supabase = await createServerClient();
   const { data: auth } = await supabase.auth.getClaims();
   const signedIn = Boolean(auth?.claims?.sub);
+  const invitePath = `/invite/${token}`;
 
   return (
     <section aria-label="Invitation" className="space-y-5 rounded-2xl border bg-card p-6 text-center shadow-card">
@@ -60,12 +61,12 @@ async function Invite({ params }: { params: PageProps<"/invite/[token]">["params
       {preview.state === "open" &&
         (signedIn ? (
           <>
-            <AcceptInviteButton onAccept={acceptInvite.bind(null, token)} />
+            <AcceptInviteButton onAccept={acceptInvite.bind(null, token)} invitePath={invitePath} />
             <p className="text-xs text-muted-foreground">It must be the email address the invitation went to ({preview.email_hint}).</p>
           </>
         ) : (
           <>
-            <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`} className={buttonVariants({ size: "touch" }) + " w-full"}>
+            <Link href={`/login?next=${encodeURIComponent(invitePath)}`} className={buttonVariants({ size: "touch" }) + " w-full"}>
               Sign in to accept
             </Link>
             <p className="text-xs text-muted-foreground">
