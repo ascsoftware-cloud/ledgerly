@@ -20,7 +20,8 @@ export function getEnabledNav(slug: string, modules: readonly string[], extra: E
     role !== undefined && on("invoices", "clients", "documents") && { key: "docs", label: "Docs", href: `${base}/docs`, icon: "folder" },
     !!extra.accounting && { key: "accounting", label: "Accounting", href: `${base}/accounting`, icon: "calculator" },
     !!extra.courier && { key: "courier", label: "Courier", href: `${base}/courier`, icon: "truck" },
-    !!extra.shopify && { key: "shopify", label: "Shopify", href: `${base}/shop`, icon: "shopping-bag" },
+    // Shopify coming later — keep the tab greyed out / hidden for now
+    false && !!extra.shopify && { key: "shopify", label: "Shopify", href: `${base}/shop`, icon: "shopping-bag" },
     { key: "more", label: "More", href: `${base}/more`, icon: "menu" },
   ];
   return items.filter((i): i is NavItem => i !== false);
