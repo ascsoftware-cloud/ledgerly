@@ -57,30 +57,19 @@ export function NavTabs({
         {tabs.map(({ tab }) => {
           const t = TABS[tab];
           const Icon = t.icon;
-          const comingSoon = tab === "shopify";
           return (
-            <li key={tab} className={`flex min-h-16 items-center gap-3 py-2 ${comingSoon ? "opacity-50" : ""}`}>
-              {comingSoon ? (
-                <div className="flex flex-1 items-center gap-3 font-medium text-muted-foreground" aria-disabled="true">
-                  <Icon className="size-5 shrink-0" aria-hidden />
-                  <span>
-                    {t.label}
-                    <span className="block text-sm font-normal">Coming soon — {t.body}</span>
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  href={`/${slug}/${t.href}`}
-                  className="flex flex-1 items-center gap-3 font-medium hover:text-primary"
-                >
-                  <Icon className="size-5 shrink-0 text-primary" aria-hidden />
-                  <span>
-                    {t.label}
-                    <span className="block text-sm font-normal text-muted-foreground">{t.body}</span>
-                  </span>
-                </Link>
-              )}
-              {canChange && !comingSoon && (
+            <li key={tab} className="flex min-h-16 items-center gap-3 py-2">
+              <Link
+                href={`/${slug}/${t.href}`}
+                className="flex flex-1 items-center gap-3 font-medium hover:text-primary"
+              >
+                <Icon className="size-5 shrink-0 text-primary" aria-hidden />
+                <span>
+                  {t.label}
+                  <span className="block text-sm font-normal text-muted-foreground">{t.body}</span>
+                </span>
+              </Link>
+              {canChange && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="hidden sm:inline">In menu</span>
                   <button
