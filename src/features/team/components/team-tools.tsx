@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,9 +184,17 @@ export function InviteControls({ slug, id, email, role }: { slug: string; id: st
   );
 }
 
-export function AcceptInviteButton({ onAccept }: { onAccept: () => Promise<{ status: "error"; message: string } | void> }) {
+export function AcceptInviteButton({
+  onAccept,
+  invitePath,
+}: {
+  onAccept: () => Promise<{ status: "error"; message: string } | void>;
+  invitePath: string;
+}) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const isEmailMismatch = error?.toLowerCase().includes("different email") ?? false;
+
   return (
     <div className="space-y-3">
       <Button
@@ -206,6 +215,14 @@ export function AcceptInviteButton({ onAccept }: { onAccept: () => Promise<{ sta
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
+      )}
+      {isEmailMismatch && (
+        <Link
+          href={`/login?next=${encodeURIComponent(invitePath)}`}
+          className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Create account
+        </Link>
       )}
     </div>
   );
