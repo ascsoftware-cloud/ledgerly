@@ -110,7 +110,7 @@ async function Section({ params }: { params: PageProps<"/[ws]/[section]">["param
             <Blocks className="size-5 text-primary" aria-hidden />
             <span className="flex-1">
               Connect apps
-              <span className="block text-sm font-normal text-muted-foreground">Xero, Sage, Courier Guy and Shopify</span>
+              <span className="block text-sm font-normal text-muted-foreground">Xero, Sage and Courier Guy (Shopify coming soon)</span>
             </span>
           </Link>
         )}
