@@ -8,6 +8,8 @@ describe("safeNext (open-redirect guard)", () => {
     ["/welcome", "/welcome"],
     ["/acme-1a2b", "/acme-1a2b"],
     ["/acme-1a2b/money?tab=overdue", "/acme-1a2b/money?tab=overdue"],
+    // A merchant installing from Shopify signs in and comes back here to pick their business.
+    ["/auth/shopify/connect?shop=cool-store.myshopify.com", "/auth/shopify/connect?shop=cool-store.myshopify.com"],
   ])("keeps the same-site path %s", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });
